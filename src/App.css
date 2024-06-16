@@ -1,0 +1,96 @@
+#root {
+  width: 100%;
+  margin: 0 auto;
+  /* padding: 2rem; */
+  text-align: center;
+  height: 100vh;
+}
+
+.App {
+  text-align: center;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.logo {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.nav-links a {
+  margin: 0 15px;
+  text-decoration: none;
+  color: #000;
+}
+
+.nav-actions a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: #000;
+}
+
+.button {
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* src/components/TransferAssets.css */
+
+.transfer-assets {
+  margin: 20px auto;
+  width: 40%;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+  margin: 15px 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group select,
+.form-group input {
+  width: calc(100% - 40px);
+  padding: 10px;
+  /* margin: 0 20px; */
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.info-warning {
+  margin: 15px 20px;
+  background-color: #fff3cd;
+  padding: 10px;
+  border: 1px solid #ffeeba;
+  border-radius: 5px;
+}
+
+.button {
+  width: calc(100% - 40px);
+  margin: 20px;
+}
+
+.button-disabled {
+  background-color: #a6a5a5;
+}
+
+.button-disabled:hover {
+  cursor: pointer;
+}
