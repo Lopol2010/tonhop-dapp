@@ -1,6 +1,5 @@
 // src/components/Navbar.js
 
-import React from 'react';
 import './Navbar.css';
 import { ConnectKitButton } from 'connectkit';
 

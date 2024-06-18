@@ -1,15 +1,15 @@
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { bscTestnet, mainnet } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { networkConfig } from "../networkConfig";
 
 const defaultConfig = getDefaultConfig({
   // Your dApps chains
-  chains: [bscTestnet],
+  chains: [networkConfig.bsc.chain],
   transports: {
     // RPC URL for each chain
-    [bscTestnet.id]: http(
-      `${import.meta.env.VITE_ALCHEMY_ID}`,
+    [networkConfig.bsc.chain.id]: http(
+      `${import.meta.env.VITE_BSC_RPC_URL}`,
     ),
   },
 
@@ -29,7 +29,7 @@ const config = createConfig(defaultConfig);
 
 const queryClient = new QueryClient();
 
-export const Web3Provider = ({ children }) => {
+export const Web3Provider = ({ children }: React.PropsWithChildren) => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

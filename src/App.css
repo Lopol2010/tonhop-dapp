@@ -42,14 +42,13 @@
   color: white;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
 }
 
 /* src/components/TransferAssets.css */
 
 .transfer-assets {
   margin: 20px auto;
-  width: 40%;
+  /* width: 40%; */
   padding: 20px;
   background-color: #fff;
   border-radius: 10px;
@@ -90,7 +89,11 @@
 .button-disabled {
   background-color: #a6a5a5;
 }
+.button-disabled:focus,
+.button-disabled:focus-visible {
+
+  outline: 0; 
+}
 
 .button-disabled:hover {
-  cursor: pointer;
 }

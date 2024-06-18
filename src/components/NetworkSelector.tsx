@@ -1,6 +1,6 @@
 // src/NetworkSelector.js
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './NetworkSelector.css';
 
 const NetworkSelector = () => {
