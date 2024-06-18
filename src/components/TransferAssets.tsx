@@ -12,17 +12,12 @@ import { ConnectKitButton } from 'connectkit';
 import { readContract } from 'wagmi/actions';
 
 const TransferAssets = () => {
-  // const [asset] = useState('TON');
-  // const [fromNetwork] = useState('Ethereum Network');
-  // const [toNetwork] = useState('Polygon Network');
   const [warning, setWarning] = useState("");
   const [amount, setAmount] = useState("");
   const [bridgeChain, setBridgeChain] = useState(networkConfig.bsc.chain);
   const [allowance, setAllowance] = useState(0n);
   const { chains, switchChain } = useSwitchChain()
-  // const [buttonText, setButtonText] = useState("Enter an amount");
   const [destinationAddress, setDestinationAddress] = useState("");
-  // TODO: must force to send 'Bridge' transaction on correct chain! 
   const { address, chainId, chain, isConnected } = useAccount();
   const config = useConfig();
 
@@ -120,9 +115,6 @@ const TransferAssets = () => {
   }, [config, address, amount])
 
   const handleApprove = () => {
-    // TODO: validate addr
-    if (!destinationAddress) return;
-
     let parsedAmount = 0n;
     parsedAmount = parseWTON(amount);
 
@@ -133,10 +125,8 @@ const TransferAssets = () => {
       args: [import.meta.env.VITE_BRIDGE_ADDRESS, BigInt(parsedAmount)]
     })
   }
-  const handleTransfer = () => {
-    // TODO: validate addr
-    if (!destinationAddress) return;
 
+  const handleTransfer = () => {
     let parsedAmount = 0n;
     parsedAmount = parseWTON(amount);
 
@@ -164,6 +154,13 @@ const TransferAssets = () => {
             return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
         }
         if (sendApproveStatus === "pending" || isApproveConfirming) {
+          return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
+        }
+      } else {
+        if((sendApproveStatus === "idle" || sendApproveStatus === "error") && !isApproveConfirming && !isApproveConfirmed) {
+          return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
+        }
+        if (sendApproveStatus === "pending") {
           return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
         }
       }
