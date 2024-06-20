@@ -10,32 +10,6 @@
   text-align: center;
 }
 
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #e6e6e6;
-}
-
-.logo {
-  font-size: 1.5em;
-  font-weight: bold;
-}
-
-.nav-links a {
-  margin: 0 15px;
-  text-decoration: none;
-  color: #000;
-}
-
-.nav-actions a {
-  margin: 0 10px;
-  text-decoration: none;
-  color: #000;
-}
-
 .button {
   padding: 10px 20px;
   background-color: #007BFF;
@@ -62,15 +36,6 @@
 .form-group label {
   display: block;
   margin-bottom: 5px;
-}
-
-.form-group select,
-.form-group input {
-  width: calc(100% - 40px);
-  padding: 10px;
-  /* margin: 0 20px; */
-  border: 1px solid #ddd;
-  border-radius: 5px;
 }
 
 .info-warning {

@@ -177,14 +177,14 @@ const TransferAssets = () => {
   }
 
   return (
-    <div className="transfer-assets w-5/6 md:w-3/5 lg:w-2/5">
+    <div className="transfer-assets dark:bg-gray-800 w-5/6 md:w-3/5 lg:w-2/5">
       <div className='flex mx-5 mb-5'>
         <div className='cursor-pointer' onClick={() => alert("TODO")}>
           <h3 className='text-left text-lg font-bold'>Transfer Assets</h3>
           <hr className='border-b-2 border-blue-500'></hr>
         </div>
         <div className='cursor-pointer' onClick={() => alert("TODO")}>
-          <h3 className='ml-8 text-gray-400 text-left text-lg font-bold'>History</h3>
+          <h3 className='ml-8 text-gray-400 dark:text-gray-400 text-left text-lg font-bold'>History</h3>
         </div>
       </div>
       <div className="form-group">
@@ -203,18 +203,35 @@ const TransferAssets = () => {
             <span className='text-gray-400'>balance: </span>
             {
               wtonBalance
-                ? <span className='cursor-pointer' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
+                ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
                   {stripDecimals(formatWTON(wtonBalance.value))}
                 </span>
                 : "-"
             }
           </div>
         </div>
-        <input className='bg-gray-100 outline-blue-500 mb-5' placeholder='0.0' type="text" value={amount} onChange={e => { setAmount(e.target.value); }} />
+        <input className="w-[calc(100%-40px)]
+                          p-3 mx-5 mb-5
+                          bg-gray-100
+                          outline-blue-500
+                          border border-solid border-gray-300 rounded-md
+                          dark:bg-gray-700
+                          dark:border-none
+                          dark:outline-gray-100" 
+          placeholder='0.0' type="text" value={amount} onChange={e => { setAmount(e.target.value); }} />
+
         <div className='flex mx-5 mb-2'>
           <div className='flex-1 text-left font-medium'>Recipient</div>
         </div>
-        <input className='bg-gray-100 outline-blue-500' type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
+        <input className="w-[calc(100%-40px)]
+                          p-3 mx-5 mb-5
+                          bg-gray-100 
+                          outline-blue-500
+                          border border-solid border-gray-300 rounded-md
+                          dark:bg-gray-700
+                          dark:border-none
+                          dark:outline-gray-100" 
+                type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
       </div>
       { getButton() }
     </div>
