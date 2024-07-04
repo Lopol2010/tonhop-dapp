@@ -10,6 +10,9 @@ import warningSign from "../assets/warning.webp"
 import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
 import { ConnectKitButton } from 'connectkit';
 import { getBalance, readContract } from 'wagmi/actions';
+import TransferInfo from './TransferInfo';
+import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
+import HistoryTab from './HistoryTab';
 
 const TransferAssets = () => {
   const [warning, setWarning] = useState("");
@@ -81,12 +84,13 @@ const TransferAssets = () => {
   });
 
   useEffect(() => {
-    if(bridgeStatus === "success") {
+    if (bridgeStatus === "success") {
       setIsShowInfo(true);
     } else {
       setIsShowInfo(false);
     }
   }, [bridgeStatus])
+
 
   useEffect(() => {
     if (!isBridgeSuccess) return;
@@ -145,36 +149,6 @@ const TransferAssets = () => {
     }
   }
 
-  function getBridgeTransferInfo() {
-    return <div>
-      <div>
-        <div className='flex mb-5 mx-5'>
-          <div className="flex text-left font-medium">BSC transaction:</div>
-          <div className='flex mx-5'>{bridgeHash ? bridgeHash.slice(0, 10) + "..." : "none"}</div>
-          <div className='flex-1 text-right ml-2'>
-            {
-              isBridgeSuccess
-                ? <span className='text-green-500'>Success!</span>
-                : bridgeHash 
-                  ? <span className='text-black-500'>Confirming...</span>
-                  : ""
-            }
-          </div>
-        </div>
-        <div className='flex w-max mb-5'>
-
-          <div className='mx-5 text-left font-medium'>TON transaction:</div>
-          <div>{"none"}</div>
-        </div>
-      </div>
-
-      <button className="w-[calc(100%-40px)] m-5 px-5 py-2 text-gray border border-solid border-gray-300"
-              onClick={() => setIsShowInfo(false)}>
-        Back
-      </button>
-    </div>
-  }
-
   function getButton() {
     if (isConnected) {
       if (chainId !== bridgeChain.id) {
@@ -213,37 +187,48 @@ const TransferAssets = () => {
   }
 
   return (
-    <div className="transfer-assets dark:bg-gray-800 w-5/6 md:w-3/5 lg:w-2/5">
-      <div className='flex mx-5 mb-5'>
-        <div className='cursor-pointer' onClick={() => alert("TODO")}>
-          <h3 className='text-left text-lg font-bold'>Transfer Assets</h3>
-          <hr className='border-b-2 border-blue-500'></hr>
+    <Tabs>
+      <div className="transfer-assets dark:bg-gray-800 min-h-96 w-5/6 md:w-3/5 lg:w-2/5">
+        <div className=''>
+          <TabList className="flex mx-5 mb-5 group">
+            <Tab className="cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
+                  selectedClassName="group selected outline-none">
+                <h3 className='group-[.selected]:text-black'>Transfer Assets</h3>
+                <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
+            </Tab>
+            <Tab className="ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
+                  selectedClassName="group selected outline-none">
+                <h3 className='group-[.selected]:text-black text-left text-lg font-bold'>History</h3>
+                <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
+            </Tab>
+          </TabList>
         </div>
-        <div className='cursor-pointer' onClick={() => alert("TODO")}>
-          <h3 className='ml-8 text-gray-400 dark:text-gray-400 text-left text-lg font-bold'>History</h3>
-        </div>
-      </div>
-      {
-        // true || isBridgeLoading || bridgeStatus === "pending" || bridgeStatus === "success"
-        isShowInfo
-        // true
-          ? getBridgeTransferInfo()
-          : <div>
-            <div className="form-group">
-              <div className='flex mx-5 mb-2'>
-                <div className='flex-1 text-left font-medium'>Amount</div>
-                <div className='flex-1 text-right font-medium'>
-                  <span className='text-gray-400'>balance: </span>
-                  {
-                    wtonBalance
-                      ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
-                        {stripDecimals(formatWTON(wtonBalance.value))}
-                      </span>
-                      : "-"
-                  }
-                </div>
-              </div>
-              <input className="w-[calc(100%-40px)]
+        <TabPanel>
+          {
+            isShowInfo
+              // true
+              ? <TransferInfo isBridgeLoading={isBridgeLoading}
+                isBridgeSuccess={isBridgeSuccess}
+                bridgeHash={bridgeHash}
+                amount={amount}
+                onClickBack={() => setIsShowInfo(false)}>
+              </TransferInfo>
+              : <div>
+                <div className="form-group">
+                  <div className='flex mx-5 mb-2'>
+                    <div className='flex-1 text-left font-medium'>Amount</div>
+                    <div className='flex-1 text-right font-medium'>
+                      <span className='text-gray-400'>balance: </span>
+                      {
+                        wtonBalance
+                          ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
+                            {stripDecimals(formatWTON(wtonBalance.value))}
+                          </span>
+                          : "-"
+                      }
+                    </div>
+                  </div>
+                  <input className="w-[calc(100%-40px)]
                           p-3 mx-5 mb-5
                           bg-gray-100
                           outline-blue-500
@@ -251,12 +236,12 @@ const TransferAssets = () => {
                           dark:bg-gray-700
                           dark:border-none
                           dark:outline-gray-100"
-                placeholder='0.0' type="text" value={amount} onChange={onAmountInputChange} />
+                    placeholder='0.0' type="text" value={amount} onChange={onAmountInputChange} />
 
-              <div className='flex mx-5 mb-2'>
-                <div className='flex-1 text-left font-medium'>Recipient</div>
-              </div>
-              <input className="w-[calc(100%-40px)]
+                  <div className='flex mx-5 mb-2'>
+                    <div className='flex-1 text-left font-medium'>Recipient</div>
+                  </div>
+                  <input className="w-[calc(100%-40px)]
                           p-3 mx-5 mb-5
                           bg-gray-100 
                           outline-blue-500
@@ -264,12 +249,17 @@ const TransferAssets = () => {
                           dark:bg-gray-700
                           dark:border-none
                           dark:outline-gray-100"
-                type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
-            </div>
-            {getButton()}
-          </div>
-      }
-    </div>
+                    type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
+                </div>
+                {getButton()}
+              </div>
+          }
+        </TabPanel>
+        <TabPanel>
+          <HistoryTab></HistoryTab>
+        </TabPanel>
+      </div>
+    </Tabs>
   );
 }
 

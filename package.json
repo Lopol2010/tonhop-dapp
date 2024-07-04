@@ -22,6 +22,7 @@
     "connectkit": "^1.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-tabs": "^6.0.2",
     "viem": "^2.14.1",
     "wagmi": "^2.10.2"
   },
