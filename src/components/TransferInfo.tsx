@@ -31,7 +31,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({isBridgeLoading, isBridgeSuc
     };
 
     if (isBridgeLoading) {
-      setConfirmationCountdown(4.0);
+      setConfirmationCountdown(8.0);
       intervalId = setInterval(() => {
         setConfirmationCountdown((currentValue) => {
           let newValue = currentValue - 0.05;
