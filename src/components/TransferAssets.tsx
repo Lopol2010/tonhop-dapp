@@ -7,49 +7,37 @@ import { bridgeAbi } from '../generated';
 import { erc20Abi, formatUnits, parseUnits } from 'viem';
 import { networkConfig } from '../networkConfig';
 import warningSign from "../assets/warning.webp"
-import { hasTestnetFlag, isValidTonAddress } from '../utils';
+import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
 import { ConnectKitButton } from 'connectkit';
-import { readContract } from 'wagmi/actions';
+import { getBalance, readContract } from 'wagmi/actions';
 
 const TransferAssets = () => {
   const [warning, setWarning] = useState("");
   const [amount, setAmount] = useState("");
   const [bridgeChain, setBridgeChain] = useState(networkConfig.bsc.chain);
   const [allowance, setAllowance] = useState(0n);
+  const [isShowInfo, setIsShowInfo] = useState(false);
   const { chains, switchChain } = useSwitchChain()
   const [destinationAddress, setDestinationAddress] = useState("");
   const { address, chainId, chain, isConnected } = useAccount();
   const config = useConfig();
 
-  const { data: wtonBalance } = useBalance({
+  const { data: wtonBalance, refetch: refetchBalance } = useBalance({
     token: import.meta.env.VITE_WTON_ADDRESS,
     address: address
   });
 
-  // transform bigint into string with 4 decimals
-  function stripDecimals(amount: string) {
-    return amount.replace(/(\d+)(\.?\d{0,4})\d*/g, "$1$2");
-  }
-  function formatWTON(value: bigint) {
-    const formattedAmountString = formatUnits(value, networkConfig.bsc.wtonDecimals);
-    return formattedAmountString;
-  }
+  const { writeContract: writeApproval, data: approveHash, status: approvalStatus } = useWriteContract()
+  const { writeContract: writeBridge, data: bridgeHash, status: bridgeStatus } = useWriteContract()
 
-  let parseWTON = (amount: string) => parseUnits(amount, networkConfig.bsc.wtonDecimals);
+  const { isLoading: isApprovalLoading, isSuccess: isApprovalSuccess } = useWaitForTransactionReceipt({
+    hash: approveHash,
+  })
 
+  const { isLoading: isBridgeLoading, isSuccess: isBridgeSuccess } = useWaitForTransactionReceipt({
+    hash: bridgeHash,
+  })
 
-  const {
-    data: approveHash,
-    // error,
-    // isPending,
-    status: sendApproveStatus,
-    writeContract: sendApprove
-  } = useWriteContract();
-
-  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
-    useWaitForTransactionReceipt({
-      hash: approveHash,
-    });
 
   const handleValidation = (() => {
     if (amount) {
@@ -93,6 +81,19 @@ const TransferAssets = () => {
   });
 
   useEffect(() => {
+    if(bridgeStatus === "success") {
+      setIsShowInfo(true);
+    } else {
+      setIsShowInfo(false);
+    }
+  }, [bridgeStatus])
+
+  useEffect(() => {
+    if (!isBridgeSuccess) return;
+    refetchBalance().then(data => { });
+  }, [isBridgeSuccess, refetchBalance])
+
+  useEffect(() => {
     handleValidation();
   }, [amount, destinationAddress])
 
@@ -108,7 +109,6 @@ const TransferAssets = () => {
         args: [address, import.meta.env.VITE_BRIDGE_ADDRESS],
       }).then(data => {
         setAllowance(data);
-        console.log(data);
       });
     }, 100);
     return () => clearTimeout(timeoutID);
@@ -118,7 +118,7 @@ const TransferAssets = () => {
     let parsedAmount = 0n;
     parsedAmount = parseWTON(amount);
 
-    sendApprove({
+    writeApproval({
       address: import.meta.env.VITE_WTON_ADDRESS,
       abi: erc20Abi,
       functionName: "approve",
@@ -130,7 +130,7 @@ const TransferAssets = () => {
     let parsedAmount = 0n;
     parsedAmount = parseWTON(amount);
 
-    sendApprove({
+    writeBridge({
       address: import.meta.env.VITE_BRIDGE_ADDRESS,
       abi: bridgeAbi,
       functionName: "bridge",
@@ -138,29 +138,65 @@ const TransferAssets = () => {
     })
   }
 
+  const onAmountInputChange = (e: React.ChangeEvent) => {
+    let value = (e.target as HTMLInputElement).value;
+    if (value.match(/^\d*(\.\d*)?$/g)) {
+      setAmount(value);
+    }
+  }
+
+  function getBridgeTransferInfo() {
+    return <div>
+      <div>
+        <div className='flex mb-5 mx-5'>
+          <div className="flex text-left font-medium">BSC transaction:</div>
+          <div className='flex mx-5'>{bridgeHash ? bridgeHash.slice(0, 10) + "..." : "none"}</div>
+          <div className='flex-1 text-right ml-2'>
+            {
+              isBridgeSuccess
+                ? <span className='text-green-500'>Success!</span>
+                : bridgeHash 
+                  ? <span className='text-black-500'>Confirming...</span>
+                  : ""
+            }
+          </div>
+        </div>
+        <div className='flex w-max mb-5'>
+
+          <div className='mx-5 text-left font-medium'>TON transaction:</div>
+          <div>{"none"}</div>
+        </div>
+      </div>
+
+      <button className="w-[calc(100%-40px)] m-5 px-5 py-2 text-gray border border-solid border-gray-300"
+              onClick={() => setIsShowInfo(false)}>
+        Back
+      </button>
+    </div>
+  }
+
   function getButton() {
-    console.log(sendApproveStatus, isApproveConfirmed);
     if (isConnected) {
-      if(chainId !== bridgeChain.id) {
-        return <button className={`button`} onClick={() => { switchChain({chainId: bridgeChain.id}); }}> 
-            {`Connect to ${bridgeChain.name}`} 
-          </button>
+      if (chainId !== bridgeChain.id) {
+        return <button className={`button`} onClick={() => { switchChain({ chainId: bridgeChain.id }); }}>
+          {`Connect to ${bridgeChain.name}`}
+        </button>
       }
       if (warning) {
         return <button className={"button button-disabled cursor-not-allowed"}> {warning} </button>;
       }
       if (allowance < parseWTON(amount)) {
-        if((sendApproveStatus === "idle" || sendApproveStatus === "error") && !isApproveConfirming && !isApproveConfirmed) {
-            return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
+        if ((approvalStatus === "idle" || approvalStatus === "error") && !isApprovalLoading && !isApprovalSuccess) {
+          return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
         }
-        if (sendApproveStatus === "pending" || isApproveConfirming) {
+        if (approvalStatus === "pending" || isApprovalLoading) {
           return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
         }
       } else {
-        if((sendApproveStatus === "idle" || sendApproveStatus === "error") && !isApproveConfirming && !isApproveConfirmed) {
+        if ((bridgeStatus === "idle" || bridgeStatus === "error") && !isBridgeLoading && !isBridgeSuccess) {
           return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
         }
-        if (sendApproveStatus === "pending") {
+        if (bridgeStatus === "pending") {
           return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
         }
       }
@@ -187,53 +223,52 @@ const TransferAssets = () => {
           <h3 className='ml-8 text-gray-400 dark:text-gray-400 text-left text-lg font-bold'>History</h3>
         </div>
       </div>
-      <div className="form-group">
-        {/* <div className='mx-5 mb-2 text-left font-medium'>Asset</div>
-        <select value={asset} onChange={e => setAsset(e.target.value)}>
-          <option value="TON">TON</option>
-        </select> */}
-      </div>
-      <div className="form-group">
-        {/* <NetworkSelector></NetworkSelector> */}
-      </div>
-      <div className="form-group">
-        <div className='flex mx-5 mb-2'>
-          <div className='flex-1 text-left font-medium'>Amount</div>
-          <div className='flex-1 text-right font-medium'>
-            <span className='text-gray-400'>balance: </span>
-            {
-              wtonBalance
-                ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
-                  {stripDecimals(formatWTON(wtonBalance.value))}
-                </span>
-                : "-"
-            }
-          </div>
-        </div>
-        <input className="w-[calc(100%-40px)]
+      {
+        // true || isBridgeLoading || bridgeStatus === "pending" || bridgeStatus === "success"
+        isShowInfo
+        // true
+          ? getBridgeTransferInfo()
+          : <div>
+            <div className="form-group">
+              <div className='flex mx-5 mb-2'>
+                <div className='flex-1 text-left font-medium'>Amount</div>
+                <div className='flex-1 text-right font-medium'>
+                  <span className='text-gray-400'>balance: </span>
+                  {
+                    wtonBalance
+                      ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
+                        {stripDecimals(formatWTON(wtonBalance.value))}
+                      </span>
+                      : "-"
+                  }
+                </div>
+              </div>
+              <input className="w-[calc(100%-40px)]
                           p-3 mx-5 mb-5
                           bg-gray-100
                           outline-blue-500
                           border border-solid border-gray-300 rounded-md
                           dark:bg-gray-700
                           dark:border-none
-                          dark:outline-gray-100" 
-          placeholder='0.0' type="text" value={amount} onChange={e => { setAmount(e.target.value); }} />
+                          dark:outline-gray-100"
+                placeholder='0.0' type="text" value={amount} onChange={onAmountInputChange} />
 
-        <div className='flex mx-5 mb-2'>
-          <div className='flex-1 text-left font-medium'>Recipient</div>
-        </div>
-        <input className="w-[calc(100%-40px)]
+              <div className='flex mx-5 mb-2'>
+                <div className='flex-1 text-left font-medium'>Recipient</div>
+              </div>
+              <input className="w-[calc(100%-40px)]
                           p-3 mx-5 mb-5
                           bg-gray-100 
                           outline-blue-500
                           border border-solid border-gray-300 rounded-md
                           dark:bg-gray-700
                           dark:border-none
-                          dark:outline-gray-100" 
+                          dark:outline-gray-100"
                 type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
-      </div>
-      { getButton() }
+            </div>
+            {getButton()}
+          </div>
+      }
     </div>
   );
 }
