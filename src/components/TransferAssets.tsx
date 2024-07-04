@@ -193,12 +193,12 @@ const TransferAssets = () => {
           <TabList className="flex mx-5 mb-5 group">
             <Tab className="cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
                   selectedClassName="group selected outline-none">
-                <h3 className='group-[.selected]:text-black'>Transfer Assets</h3>
+                <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200'>Transfer Assets</h3>
                 <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
             </Tab>
             <Tab className="ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
                   selectedClassName="group selected outline-none">
-                <h3 className='group-[.selected]:text-black text-left text-lg font-bold'>History</h3>
+                <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200 text-left text-lg font-bold'>History</h3>
                 <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
             </Tab>
           </TabList>
