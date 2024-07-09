@@ -13,7 +13,7 @@ export const convertDecimals = (amountA: bigint, decimalsA: number, decimalsB: n
     return amountA;
 }
 
-// transform bigint into string with 4 decimals
+// limit float to 4 decimals
 export function stripDecimals(amount: string) {
     return amount.replace(/(\d+)(\.?\d{0,4})\d*/g, "$1$2");
 }
@@ -22,7 +22,19 @@ export function formatWTON(value: bigint) {
     return formattedAmountString;
 }
 
+export function calcReceiveAmount(inputAmountBNB: string) {
+    console.log(inputAmountBNB)
+    return parseWTON(inputAmountBNB) 
+        - convertDecimals(
+            parseTON("0.06") + parseTON(networkConfig.bridgeFee),
+            networkConfig.ton.tonDecimals,
+            networkConfig.bsc.wtonDecimals
+        )
+}
+
+
 export const parseWTON = (amount: string) => parseUnits(amount, networkConfig.bsc.wtonDecimals);
+export const parseTON = (amount: string) => parseUnits(amount, networkConfig.ton.tonDecimals);
 
 export function isValidTonAddress(address: string) {
 

@@ -7,7 +7,7 @@ import { bridgeAbi } from '../generated';
 import { erc20Abi, formatUnits, parseUnits } from 'viem';
 import { networkConfig } from '../networkConfig';
 import warningSign from "../assets/warning.webp"
-import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
+import { calcReceiveAmount, formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
 import { ConnectKitButton } from 'connectkit';
 import { getBalance, readContract } from 'wagmi/actions';
 import TransferInfo from './TransferInfo';
@@ -16,6 +16,7 @@ import HistoryTab from './HistoryTab';
 
 const TransferAssets = () => {
   const [warning, setWarning] = useState("");
+  const [isValidAmountString, setIsValidAmountString] = useState(false);
   const [amount, setAmount] = useState("");
   const [bridgeChain, setBridgeChain] = useState(networkConfig.bsc.chain);
   const [allowance, setAllowance] = useState(0n);
@@ -31,18 +32,19 @@ const TransferAssets = () => {
   });
 
   const { writeContract: writeApproval, data: approveHash, status: approvalStatus } = useWriteContract()
-  const { writeContract: writeBridge, data: bridgeHash, status: bridgeStatus } = useWriteContract()
+  const { writeContract: writeBridge, data: bridgeHash, status: bridgeRequestStatus } = useWriteContract()
 
   const { isLoading: isApprovalLoading, isSuccess: isApprovalSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
   })
 
-  const { isLoading: isBridgeLoading, isSuccess: isBridgeSuccess } = useWaitForTransactionReceipt({
+  const { isLoading: isBridgeLoading, isSuccess: isBridgeSuccess, status: bridgeTxStatus } = useWaitForTransactionReceipt({
     hash: bridgeHash,
   })
 
 
   const handleValidation = (() => {
+    setIsValidAmountString(false);
     if (amount) {
 
       if (!amount.match(/^\d+(\.\d+)?$/g)) {
@@ -63,6 +65,7 @@ const TransferAssets = () => {
       setWarning("Enter an amount");
       return;
     }
+    setIsValidAmountString(true);
 
     if (destinationAddress) {
       if (!isValidTonAddress(destinationAddress)) {
@@ -84,12 +87,12 @@ const TransferAssets = () => {
   });
 
   useEffect(() => {
-    if (bridgeStatus === "success") {
+    if (bridgeRequestStatus === "success") {
       setIsShowInfo(true);
     } else {
       setIsShowInfo(false);
     }
-  }, [bridgeStatus])
+  }, [bridgeRequestStatus])
 
 
   useEffect(() => {
@@ -106,6 +109,7 @@ const TransferAssets = () => {
 
     // timeout is for throttling
     let timeoutID = setTimeout(() => {
+      // TODO: should rethink how allowance is fetched, because 'approve' button blinks sometimes
       readContract(config, {
         abi: erc20Abi,
         address: import.meta.env.VITE_WTON_ADDRESS,
@@ -152,14 +156,14 @@ const TransferAssets = () => {
   function getButton() {
     if (isConnected) {
       if (chainId !== bridgeChain.id) {
-        return <button className={`button`} onClick={() => { switchChain({ chainId: bridgeChain.id }); }}>
-          {`Connect to ${bridgeChain.name}`}
-        </button>
+        return <button className='button' onClick={() => { switchChain({ chainId: bridgeChain.id }) }}>{`Connect to ${bridgeChain.name}`}</button>
       }
       if (warning) {
         return <button className={"button button-disabled cursor-not-allowed"}> {warning} </button>;
       }
-      if (allowance < parseWTON(amount)) {
+      // TODO: wrong conditions, should only rely on allowance right before bridge, not after
+      // currently fixed by adding additional "&&" checks
+      if (allowance < parseWTON(amount) && bridgeRequestStatus == 'idle' && !isBridgeLoading) {
         if ((approvalStatus === "idle" || approvalStatus === "error") && !isApprovalLoading && !isApprovalSuccess) {
           return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
         }
@@ -167,10 +171,10 @@ const TransferAssets = () => {
           return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
         }
       } else {
-        if ((bridgeStatus === "idle" || bridgeStatus === "error") && !isBridgeLoading && !isBridgeSuccess) {
+        if ((bridgeRequestStatus === "idle" || bridgeRequestStatus === "error") && !isBridgeLoading && !isBridgeSuccess) {
           return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
         }
-        if (bridgeStatus === "pending") {
+        if (bridgeRequestStatus === "pending") {
           return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
         }
       }
@@ -191,15 +195,13 @@ const TransferAssets = () => {
       <div className="transfer-assets dark:bg-gray-800 min-h-96 w-5/6 md:w-3/5 lg:w-2/5">
         <div className=''>
           <TabList className="flex mx-5 mb-5 group">
-            <Tab className="cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
-                  selectedClassName="group selected outline-none">
+            <Tab className={`border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400`} 
+                  selectedClassName="group selected !border-solid outline-none">
                 <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200'>Transfer Assets</h3>
-                <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
             </Tab>
-            <Tab className="ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
-                  selectedClassName="group selected outline-none">
+            <Tab className="border-none border-b-[3px] border-blue-500 ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
+                  selectedClassName="group selected !border-solid outline-none">
                 <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200 text-left text-lg font-bold'>History</h3>
-                <hr className='group-[.selected]:border-solid border-none border-b-2 border-blue-500'></hr>
             </Tab>
           </TabList>
         </div>
@@ -210,9 +212,19 @@ const TransferAssets = () => {
               ? <TransferInfo isBridgeLoading={isBridgeLoading}
                 isBridgeSuccess={isBridgeSuccess}
                 bridgeHash={bridgeHash}
+                destinationAddress={destinationAddress}
+                bridgeTxStatus={bridgeTxStatus}
                 amount={amount}
                 onClickBack={() => setIsShowInfo(false)}>
               </TransferInfo>
+              // ? <TransferInfo isBridgeLoading={true}
+              //   isBridgeSuccess={true}
+              //   destinationAddress={"UQC_pxTeZV0YIxOhOWRyJpuni-ab-68Akldrl6pvhZ3BcgV8"}
+              //   bridgeTxStatus={bridgeTxStatus}
+              //   bridgeHash={"0x111848c5de1389edd9e18c9b80c9b4e5c5186725e5f55ee77cf01044ed6233f7"}
+              //   amount={"0.05"}
+              //   onClickBack={() => setIsShowInfo(false)}>
+              // </TransferInfo>
               : <div>
                 <div className="form-group">
                   <div className='flex mx-5 mb-2'>
@@ -242,7 +254,7 @@ const TransferAssets = () => {
                     <div className='flex-1 text-left font-medium'>Recipient</div>
                   </div>
                   <input className="w-[calc(100%-40px)]
-                          p-3 mx-5 mb-5
+                          p-3 mx-5 mb-[5px]
                           bg-gray-100 
                           outline-blue-500
                           border border-solid border-gray-300 rounded-md
@@ -251,7 +263,16 @@ const TransferAssets = () => {
                           dark:outline-gray-100"
                     type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
                 </div>
+                {
+                  !isValidAmountString 
+                    ? "" 
+                    : <div className='font-medium  text-gray-400'>You'll receive { stripDecimals(formatWTON(parseWTON(amount) - parseWTON("0.008"))) } Toncoin</div>
+                }
                 {getButton()}
+                <div className='font-medium text-sm text-gray-400'>
+                {/* <div>Bridge fee: {networkConfig.bridgeFee} TON </div> */}
+                <div>Network fee: 0.0002 BNB + 0.008 TON</div>
+                </div>
               </div>
           }
         </TabPanel>
