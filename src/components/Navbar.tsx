@@ -4,6 +4,7 @@ import './Navbar.css';
 import { ConnectKitButton } from 'connectkit';
 
 export const Navbar = () => {
+  const isDarkMode = () =>  window.matchMedia('(prefers-color-scheme: dark)').matches;
   return (
     <nav className="p-5 flex justify-between bg-gray-100 dark:bg-gray-800 border-b border-solid border-gray-300 dark:border-gray-600">
       <div className="flex items-center font-semibold text-2xl">TONHOP</div>
@@ -25,7 +26,16 @@ export const Navbar = () => {
           <span>ETH: 0x253...da159</span>
         </div>
         <button className="change-wallet">Change wallet</button> */}
-        <ConnectKitButton></ConnectKitButton>
+        <ConnectKitButton customTheme={{
+          "--ck-connectbutton-background": isDarkMode() ? "rgb(55 65 81)" : "#ddd",
+        }}></ConnectKitButton>
+      {/* <ConnectKitButton.Custom>
+        {({ isConnected, isConnecting, show, hide, address, ensName, chain }) => {
+          return (
+            <button onClick={show} className='bg-gray-300'> Connect Wallet </button>
+          );
+        }}
+      </ConnectKitButton.Custom> */}
       </div>
     </nav>
   );

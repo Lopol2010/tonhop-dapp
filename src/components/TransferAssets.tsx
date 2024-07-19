@@ -13,6 +13,7 @@ import { getBalance, readContract } from 'wagmi/actions';
 import TransferInfo from './TransferInfo';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import HistoryTab from './HistoryTab';
+import { HistoryEntry, saveHistoryEntry } from './HistoryStorage';
 
 const TransferAssets = () => {
   const [warning, setWarning] = useState("");
@@ -25,13 +26,14 @@ const TransferAssets = () => {
   const [destinationAddress, setDestinationAddress] = useState("");
   const { address, chainId, chain, isConnected } = useAccount();
   const config = useConfig();
+  const [tabIndex, setTabIndex] = useState(0);
 
   const { data: wtonBalance, refetch: refetchBalance } = useBalance({
     token: import.meta.env.VITE_WTON_ADDRESS,
     address: address
   });
 
-  const { writeContract: writeApproval, data: approveHash, status: approvalStatus } = useWriteContract()
+  const { writeContract: writeApproval, data: approveHash, status: approvalRequestStatus } = useWriteContract()
   const { writeContract: writeBridge, data: bridgeHash, status: bridgeRequestStatus } = useWriteContract()
 
   const { isLoading: isApprovalLoading, isSuccess: isApprovalSuccess } = useWaitForTransactionReceipt({
@@ -86,13 +88,33 @@ const TransferAssets = () => {
     setWarning("");
   });
 
+
   useEffect(() => {
-    if (bridgeRequestStatus === "success") {
+    if(!isBridgeSuccess || !bridgeHash) return;
+
+    console.log(isBridgeSuccess, bridgeHash, amount, bridgeTxStatus, destinationAddress)
+
+    let newHistoryEntry: HistoryEntry = {
+      date: Date.now(),
+      bridgeRecievedAmount: amount,
+      destinationAddress: destinationAddress,
+      bsc: {
+        txHash: bridgeHash,
+        status: bridgeTxStatus,
+      }
+    };
+
+    saveHistoryEntry(newHistoryEntry)
+
+  }, [isBridgeSuccess, bridgeHash]);
+
+  useEffect(() => {
+    if (bridgeRequestStatus === "success" && bridgeHash) {
       setIsShowInfo(true);
     } else {
       setIsShowInfo(false);
     }
-  }, [bridgeRequestStatus])
+  }, [bridgeRequestStatus, bridgeHash])
 
 
   useEffect(() => {
@@ -105,7 +127,7 @@ const TransferAssets = () => {
   }, [amount, destinationAddress])
 
   useEffect(() => {
-    if (!address || !amount) return;
+    if (!address) return;
 
     // timeout is for throttling
     let timeoutID = setTimeout(() => {
@@ -154,32 +176,7 @@ const TransferAssets = () => {
   }
 
   function getButton() {
-    if (isConnected) {
-      if (chainId !== bridgeChain.id) {
-        return <button className='button' onClick={() => { switchChain({ chainId: bridgeChain.id }) }}>{`Connect to ${bridgeChain.name}`}</button>
-      }
-      if (warning) {
-        return <button className={"button button-disabled cursor-not-allowed"}> {warning} </button>;
-      }
-      // TODO: wrong conditions, should only rely on allowance right before bridge, not after
-      // currently fixed by adding additional "&&" checks
-      if (allowance < parseWTON(amount) && bridgeRequestStatus == 'idle' && !isBridgeLoading) {
-        if ((approvalStatus === "idle" || approvalStatus === "error") && !isApprovalLoading && !isApprovalSuccess) {
-          return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
-        }
-        if (approvalStatus === "pending" || isApprovalLoading) {
-          return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
-        }
-      } else {
-        if ((bridgeRequestStatus === "idle" || bridgeRequestStatus === "error") && !isBridgeLoading && !isBridgeSuccess) {
-          return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
-        }
-        if (bridgeRequestStatus === "pending") {
-          return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
-        }
-      }
-      return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
-    } else {
+    if (!isConnected) {
       return <ConnectKitButton.Custom>
         {({ isConnected, isConnecting, show, hide, address, ensName, chain }) => {
           return (
@@ -188,24 +185,47 @@ const TransferAssets = () => {
         }}
       </ConnectKitButton.Custom>
     }
+
+    if (chainId !== bridgeChain.id) {
+      return <button className='button' onClick={() => { switchChain({ chainId: bridgeChain.id }) }}>{`Connect to ${bridgeChain.name}`}</button>
+    }
+
+    if (warning) {
+      return <button className={"button button-disabled cursor-not-allowed"}> {warning} </button>;
+    }
+
+    if (allowance < parseWTON(amount) && bridgeRequestStatus == 'idle' && !isBridgeLoading) {
+      if ((approvalRequestStatus === "idle" || approvalRequestStatus === "error") && !isApprovalLoading && !isApprovalSuccess) {
+        return <button className={`button`} onClick={() => { handleApprove(); }}> {"Approve"} </button>
+      }
+    }
+
+    if (approvalRequestStatus === "pending" || isApprovalLoading) {
+      return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
+    }
+    if (bridgeRequestStatus === "pending" || isBridgeLoading) {
+      return <button className={`button button-disabled cursor-not-allowed`}> {"Wait for confirmation..."} </button>
+    }
+
+    return <button className={`button`} onClick={() => { handleTransfer(); }}> {"Bridge"} </button>
   }
 
   return (
-    <Tabs>
+    <Tabs onSelect={(index) => setTabIndex(index)}>
       <div className="transfer-assets dark:bg-gray-800 min-h-96 w-5/6 md:w-3/5 lg:w-2/5">
         <div className=''>
           <TabList className="flex mx-5 mb-5 group">
-            <Tab className={`border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400`} 
-                  selectedClassName="group selected !border-solid outline-none">
-                <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200'>Transfer Assets</h3>
+            <Tab className={`border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400`}
+              selectedClassName="group selected !border-solid outline-none">
+              <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200'>Transfer Assets</h3>
             </Tab>
             <Tab className="border-none border-b-[3px] border-blue-500 ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
-                  selectedClassName="group selected !border-solid outline-none">
-                <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200 text-left text-lg font-bold'>History</h3>
+              selectedClassName="group selected !border-solid outline-none">
+              <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200 text-left text-lg font-bold'>History</h3>
             </Tab>
           </TabList>
         </div>
-        <TabPanel>
+        <TabPanel forceRender={true}                 className={`${tabIndex == 0 ? "block" : "hidden"}`}>
           {
             isShowInfo
               // true
@@ -215,9 +235,11 @@ const TransferAssets = () => {
                 destinationAddress={destinationAddress}
                 bridgeTxStatus={bridgeTxStatus}
                 amount={amount}
-                onClickBack={() => setIsShowInfo(false)}>
+                onClickBack={() => setIsShowInfo(false)}
+                // className={`${tabIndex == 0 ? "block" : "hidden"}`}>
+                >
               </TransferInfo>
-              // ? <TransferInfo isBridgeLoading={true}
+              // ? <TransferInfo isBridgeLoading={true} 
               //   isBridgeSuccess={true}
               //   destinationAddress={"UQC_pxTeZV0YIxOhOWRyJpuni-ab-68Akldrl6pvhZ3BcgV8"}
               //   bridgeTxStatus={bridgeTxStatus}
@@ -264,14 +286,14 @@ const TransferAssets = () => {
                     type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
                 </div>
                 {
-                  !isValidAmountString 
-                    ? "" 
-                    : <div className='font-medium  text-gray-400'>You'll receive { stripDecimals(formatWTON(parseWTON(amount) - parseWTON("0.008"))) } Toncoin</div>
+                  !isValidAmountString
+                    ? ""
+                    : <div className='font-medium  text-gray-400'>You'll receive ~{stripDecimals(formatWTON(parseWTON(amount) - parseWTON("0.008")))} Toncoin</div>
                 }
                 {getButton()}
                 <div className='font-medium text-sm text-gray-400'>
-                {/* <div>Bridge fee: {networkConfig.bridgeFee} TON </div> */}
-                <div>Network fee: 0.0002 BNB + 0.008 TON</div>
+                  {/* <div>Bridge fee: {networkConfig.bridgeFee} TON </div> */}
+                  <div>Network fee: 0.0002 BNB + 0.008 TON</div>
                 </div>
               </div>
           }
