@@ -56,7 +56,7 @@ const HistoryTab: React.FC<TransferInfoProps> = () => {
   }
 
   function formatTxHexHash(hash: string) {
-    return hash.replace(/^(\w{6})\w+(\w{5})$/g, "$1...$2");
+    return hash.replace(/^(\w{5})\w+(\w{4})$/g, "$1...$2");
   }
 
   return <div className='mt-5'>
@@ -85,7 +85,7 @@ const HistoryTab: React.FC<TransferInfoProps> = () => {
       // : 
         historyEntries.reverse().map((entry, i) => {
           // TODO: format amount!
-          return <div key={i} className='flex p-3 mx-5 border-b-2 border-solid border-gray-200 dark:border-gray-500'>
+          return <div key={i} className={`flex p-3 mx-5 border-b-2 border-gray-200 dark:border-gray-500 ${i == historyEntries.length-1 ? "border-none" : "border-solid" }`}>
       <div className='flex-1'>
         {/* {(new Date(entry.date)).toLocaleDateString()} */}
         {(entry.bridgeRecievedAmount) ? entry.bridgeRecievedAmount + " WTON" : "-"}

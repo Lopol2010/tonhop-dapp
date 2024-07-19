@@ -212,7 +212,7 @@ const TransferAssets = () => {
 
   return (
     <Tabs onSelect={(index) => setTabIndex(index)}>
-      <div className="transfer-assets dark:bg-gray-800 min-h-96 w-5/6 md:w-3/5 lg:w-2/5">
+      <div className="transfer-assets dark:bg-gray-800 min-h-96 w-11/12 px-0 md:w-3/5 lg:w-2/5">
         <div className=''>
           <TabList className="flex mx-5 mb-5 group">
             <Tab className={`border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400`}
