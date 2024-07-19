@@ -14,6 +14,7 @@ import TransferInfo from './TransferInfo';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import HistoryTab from './HistoryTab';
 import { HistoryEntry, saveHistoryEntry } from './HistoryStorage';
+import NetworkSelector from './NetworkSelector';
 
 const TransferAssets = () => {
   const [warning, setWarning] = useState("");
@@ -212,7 +213,7 @@ const TransferAssets = () => {
 
   return (
     <Tabs onSelect={(index) => setTabIndex(index)}>
-      <div className="transfer-assets dark:bg-gray-800 min-h-96 w-11/12 px-0 md:w-3/5 lg:w-2/5">
+      <div className="transfer-assets dark:bg-gray-800 min-h-96 py-5 px-0 sm:px-5 w-11/12 md:w-3/4 lg:w-3/5 xl:w-2/5 min-w-fit">
         <div className=''>
           <TabList className="flex mx-5 mb-5 group">
             <Tab className={`border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400`}
@@ -248,7 +249,11 @@ const TransferAssets = () => {
               //   onClickBack={() => setIsShowInfo(false)}>
               // </TransferInfo>
               : <div>
-                <div className="form-group">
+                <div className="form-group mt-8">
+                  <div className='flex mx-5 mb-2'>
+                    <div className='flex-1 text-left font-medium'>Asset</div>
+                  </div>
+                  <NetworkSelector></NetworkSelector>
                   <div className='flex mx-5 mb-2'>
                     <div className='flex-1 text-left font-medium'>Amount</div>
                     <div className='flex-1 text-right font-medium'>
