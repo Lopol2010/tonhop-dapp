@@ -208,7 +208,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
               <div className=''>Transaction:</div>
             </div>
             <div className='flex-1'>
-              <div className=''>{
+              <div className='font-medium'>{
                 destinationTx
                   ? getFormattedToncoinAmountReceivedByDestination() + " TON"
                   : "-"
