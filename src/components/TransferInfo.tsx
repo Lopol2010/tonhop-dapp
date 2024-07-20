@@ -40,7 +40,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
 
   const txStatusConfig = {
     "success": { text: "Success!", className: "text-green-500" },
-    "pending": { text: "Confirming...", className: "text-gray-500" },
+    "pending": { text: "Confirming...", className: "text-gray-500 dark:text-gray-300" },
     "error": { text: "Failed.", className: "text-red-500" },
   };
 
@@ -177,12 +177,12 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
             <div className='flex-1 text-left' >
               <div className=' font-medium '>{amount ? amount + " WTON" : "-"}</div>
               <div className=' font-medium '>
-                <a className='flex' href={bridgeHash ? networkConfig.bsc.getExplorerLink(bridgeHash) : ""} target='_blank'>
+                <a className='flex dark:text-blue-400' href={bridgeHash ? networkConfig.bsc.getExplorerLink(bridgeHash) : ""} target='_blank'>
                   <span className=''>
                     {bridgeHash ? formatTxHexHash(bridgeHash) : "-"}
                   </span>
                   <span className='content-center ml-2'>
-                    <img className='w-4' src="link.png"></img>
+                    {/* <img className='w-4 dark:text-white' src="link.png"></img> */}
                   </span>
                 </a>
               </div>
@@ -214,7 +214,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
                   : "-"
               }
               </div>
-              <a className={`flex ${destinationTx ? "" : "cursor-default text-inherit hover:text-inherit"}`}
+              <a className={`flex ${destinationTx ? "dark:text-blue-400" : "cursor-default text-inherit hover:text-inherit"}`}
                 href={destinationTx ? networkConfig.ton.getExplorerLink(destinationTx.hash().toString('hex')) : ""}
                 onClick={e => destinationTx || e.preventDefault()} target='_blank'>
                 <span className=''>
@@ -228,9 +228,9 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
                 </span>
                 <span className='content-center ml-2'>
                   {
-                    isBridgeSuccess && destinationTx
-                      ? <img className='w-4' src="link.png"></img>
-                      : ""
+                    // isBridgeSuccess && destinationTx
+                      // ? <img className='w-4' src="link.png"></img>
+                      // : ""
                   }
                 </span>
                 {

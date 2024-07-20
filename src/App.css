@@ -62,3 +62,10 @@
 
 .button-disabled:hover {
 }
+
+@media (prefers-color-scheme: dark) {
+  .button-disabled {
+    background-color: rgb(64, 69, 78);
+    color: #828282
+  }
+}
