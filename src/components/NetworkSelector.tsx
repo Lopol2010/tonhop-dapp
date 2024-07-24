@@ -43,6 +43,9 @@ const NetworkSelector = () => {
     setToNetwork(temp);
   }
 
+  const getOptionElements = (optionsData: ({value: string, text: string})[]) => {
+    return optionsData.map((e,i) => <option key={i} value={e.value}>{e.text}</option>);
+  }
 
   return (
     <div>
@@ -51,21 +54,21 @@ const NetworkSelector = () => {
         <Selector labelText='' variant={"mid"} value={fromNetwork}
           onChange={e => setFromNetwork(e.target.value)}
           icon={tonIcon}
-          options={[<option value="Toncoin">Toncoin</option>]}>
+          options={getOptionElements([{value: "Toncoin", text: "Toncoin"}])}>
         </Selector>
       </div>
       <div className="flex items-center justify-center mx-5 mb-5 flex-col sm:flex-row">
         <Selector labelText='from:' variant={"left"} value={fromNetwork}
           onChange={e => setFromNetwork(e.target.value)}
           icon={bnbIcon}
-          options={[<option value="BSC">Binance Smart Chain</option>]}>
+          options={getOptionElements([{value: "BSC", text: "Binance Smart Chain"}])}>
         </Selector>
         {/* <button className="swap-button" onClick={handleSwap}>⇆</button> */}
         <Selector value={toNetwork} variant={"right"}
           onChange={e => setToNetwork(e.target.value)}
           labelText='to:'
           icon={tonIcon}
-          options={[<option value="TON">The Open Network</option>]}>
+          options={getOptionElements([{value:"TON", text: "The Open Network"}])}>
         </Selector>
 
       </div>

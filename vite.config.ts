@@ -14,24 +14,5 @@ export default defineConfig({
       process: false
     }
   })],
-  build: {
-    // rollupOptions: {
-      // plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
-    // },
-  },
-  optimizeDeps: {
-    esbuildOptions: {
-      // Node.js global to browser globalThis
-      // define: {
-      //   global: 'globalThis'
-      // },
-      // Enable esbuild polyfill plugins
-      plugins: [
-        // NodeGlobalsPolyfillPlugin({
-        //   buffer: true
-        // })
-      ]
-    }
-  }
 
 })

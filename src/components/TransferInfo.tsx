@@ -35,16 +35,16 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
       }
     }
   }
-  
+
   const [destinationTx, setDestinationTx] = useState<MyTransactionType>();
 
   const txStatusConfig = {
     "success": { text: "Success!", className: "text-green-500" },
-    "pending": { text: "Confirming...", className: "text-gray-500 dark:text-gray-300" },
+    "pending": { text: "Confirming...", className: "dark:text-gray-300" },
     "error": { text: "Failed.", className: "text-red-500" },
   };
 
-  const { text, className } = txStatusConfig[bridgeTxStatus];
+  const { text: txStatusText, className: txStatusClassName } = txStatusConfig[bridgeTxStatus];
 
   useEffect(() => {
     if (!destinationTx) return;
@@ -93,8 +93,8 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
     }
 
     (async () => {
-      let RETRY_ATTEMPTS = 15;
-      let RETRY_INTERVAL = 3000;
+      let RETRY_ATTEMPTS = 30;
+      let RETRY_INTERVAL = 2000;
       let destinationTx;
       for (let i = 0; i < RETRY_ATTEMPTS; i++) {
         console.log("attempt to search for TON transaction");
@@ -138,7 +138,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
     };
 
     if (isBridgeLoading || isBridgeSuccess) {
-      setConfirmationCountdown(isBridgeSuccess ? 20.0 : 8.0);
+      setConfirmationCountdown(isBridgeSuccess ? 30.0 : 7.0);
       // TODO: should rely on timestamp, because setInterval pauses when for example you switch windows
       intervalId = setInterval(() => {
         setConfirmationCountdown((currentValue) => {
@@ -181,18 +181,17 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
                   <span className=''>
                     {bridgeHash ? formatTxHexHash(bridgeHash) : "-"}
                   </span>
-                  <span className='content-center ml-2'>
-                    {/* <img className='w-4 dark:text-white' src="link.png"></img> */}
-                  </span>
                 </a>
               </div>
-              <div className={`font-medium ${className}`}>
-                {text + " "}
-                {
-                  (bridgeHash && bridgeTxStatus === "pending" && confirmationCountdown > 0
-                    ? confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")
-                    : "")
-                }
+              <div className={`font-medium ${txStatusClassName}`}>
+                {txStatusText + " "}
+                <span className='w-[4ch]'>
+                  {
+                    (bridgeHash && bridgeTxStatus === "pending" && confirmationCountdown > 0
+                      ? confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")
+                      : "")
+                  }
+                </span>
               </div>
             </div>
           </div>
@@ -217,31 +216,28 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
               <a className={`flex ${destinationTx ? "dark:text-blue-400" : "cursor-default text-inherit hover:text-inherit"}`}
                 href={destinationTx ? networkConfig.ton.getExplorerLink(destinationTx.hash().toString('hex')) : ""}
                 onClick={e => destinationTx || e.preventDefault()} target='_blank'>
-                <span className=''>
+                <span className='whitespace-pre'>
                   {
                     destinationTx
                       ? formatTxHexHash("0x" + destinationTx.hash().toString('hex'))
                       : isBridgeSuccess
-                        ? "Searching..."
+                        ? confirmationCountdown > 0
+                          ? "Searching... "
+                          : ""
                         : "-"
                   }
                 </span>
-                <span className='content-center ml-2'>
+                
                   {
-                    // isBridgeSuccess && destinationTx
-                      // ? <img className='w-4' src="link.png"></img>
-                      // : ""
+                    isBridgeSuccess
+                      ? destinationTx
+                        ? ""
+                        : confirmationCountdown > 0
+                          ? <span className='w-[4ch]'>{confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")}</span>
+                          : <span className=''>Almost there!</span>
+                      : ""
                   }
-                </span>
-                {
-                  isBridgeSuccess
-                    ? destinationTx
-                      ? ""
-                      : confirmationCountdown > 0
-                        ? confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")
-                        : "Almost there!"
-                    : ""
-                }
+                
               </a>
               <div className={`font-medium text-black-500`}>
               </div>
@@ -252,7 +248,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
       }
     </div>
 
-    <button className="w-[calc(100%-40px)] m-5 px-5 py-2 text-gray border border-solid border-gray-300 dark:border-gray-500 dark:bg-gray-700"
+    <button className="w-[calc(100%-40px)] m-5 px-5 py-2 text-gray border border-solid border-gray-300 dark:border-gray-500 bg-gray-100 dark:bg-gray-700"
       onClick={() => {
         onClickBack()
       }}>
