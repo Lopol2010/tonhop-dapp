@@ -1,15 +1,14 @@
 // src/components/TransferAssets.js
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../App.css';
-import { useAccount, useAccountEffect, useBalance, useConfig, useReadContract, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+import { useAccount, useBalance, useConfig, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { bridgeAbi } from '../generated';
-import { erc20Abi, formatUnits, parseUnits } from 'viem';
+import { erc20Abi } from 'viem';
 import { networkConfig } from '../networkConfig';
-import warningSign from "../assets/warning.webp"
-import { calcReceiveAmount, formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
+import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
 import { ConnectKitButton } from 'connectkit';
-import { getBalance, readContract } from 'wagmi/actions';
+import { readContract } from 'wagmi/actions';
 import TransferInfo from './TransferInfo';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import HistoryTab from './HistoryTab';

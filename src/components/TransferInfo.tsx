@@ -78,14 +78,20 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
 
         if (!inMsg) continue;
 
-        // TODO: handle unexpected payload
-        let evmLogIndexFull = inMsg.body.beginParse().loadStringTail() + inMsg.body.beginParse().loadStringRefTail();
-        // remove 4 bytes of zeroes
-        evmLogIndexFull = evmLogIndexFull.trim().slice(4);
+        let payloadString;
+        try {
+          payloadString = inMsg.body.beginParse().loadStringTail();
+          if(inMsg.body.beginParse().remainingRefs == 1) {
+            payloadString += inMsg.body.beginParse().loadStringRefTail();
+          }
+        } catch (error) { continue; }
 
-        const evmBlockHash = evmLogIndexFull.slice(0, 66);
-        const evmTxHash = evmLogIndexFull.slice(66, 132);
-        const evmLogIndex = evmLogIndexFull.slice(132);
+        // remove 4 bytes of zeroes
+        payloadString = payloadString.trim().slice(4);
+
+        const evmBlockHash = payloadString.slice(0, 66);
+        const evmTxHash = payloadString.slice(66, 132);
+        const evmLogIndex = payloadString.slice(132);
 
         if (predicate(evmTxHash)) return txs[i];
       }

@@ -3,6 +3,7 @@
 import { HTMLAttributes, ReactElement, ReactNode, SelectHTMLAttributes, useState } from 'react';
 import bnbIcon from './../../public/bnb-bnb-logo.svg';
 import tonIcon from './../../public/ton_symbol.svg';
+import { ChainName } from './ChainName';
 
 interface SelectorProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   labelText: string,
@@ -13,62 +14,77 @@ interface SelectorProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 const Selector: React.FC<SelectorProps> = ({ value, onChange, labelText, options, variant, icon }) => {
   const variantConfig = {
-    "right": "sm:border-l-0 sm:justify-end sm:pr-4 rounded-t-none sm:rounded-bl-none",
-    "left": "sm:border-r-0 border-b-0 sm:border rounded-t-none rounded-b-none sm:rounded-bl-md",
-    "mid": "border-b-0 rounded-b-none",
+    "right": "sm:border-l-0 sm:justify-end sm:pr-4 rounded-t-none sm:rounded-bl-none pl-4 sm:pl-0",
+    "left": "sm:border-r-0 border-b-1 sm:border rounded-t-none rounded-b-none sm:rounded-bl-md pl-4",
+    "mid": "border-b-0 rounded-b-none pl-4",
   }
-  return <div className={`flex flex-1 items-center border rounded-md border-gray-300 dark:border-gray-600 w-full pl-4
+  return <div className={`flex flex-1 items-center border rounded-md border-gray-300 dark:border-gray-600 w-full
                           ${variantConfig[variant]}`}>
-    <img src={icon} className='w-7'></img>
+    <img src={icon} className={`w-7`}></img>
     <label className='ml-3 mr-1 text-gray-500 dark:text-gray-400'>{labelText}</label>
     <select disabled className='my-4 bg-transparent disabled:opacity-100 font-semibold appearance-none'
       value={value} onChange={onChange} onClick={(e) => { e.preventDefault() }}>
       {options}
-      {/* <option value="Ethereum Network">Ethereum Network</option> */}
-      {/* <option value="Binance Smart Chain">Binance Smart Chain</option> */}
-      {/* <option value="Polygon Network">Polygon Network</option> */}
-      {/* <option value="TON">TON Network</option> */}
-      {/* Add more options as necessary */}
     </select>
   </div>
 }
 
-const NetworkSelector = () => {
-  const [fromNetwork, setFromNetwork] = useState('BSC');
-  const [toNetwork, setToNetwork] = useState('TON');
+interface NetworkSelectorProps {
+  onSelect: (newDirection: { from: ChainName, to: ChainName }) => void
+}
+
+const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect}) => {
+  const [fromNetwork, setFromNetwork] = useState(ChainName.BNB);
+  const [toNetwork, setToNetwork] = useState(ChainName.TON);
 
   const handleSwap = () => {
     const temp = fromNetwork;
     setFromNetwork(toNetwork);
     setToNetwork(temp);
+    onSelect({ from: toNetwork, to: temp });
   }
 
-  const getOptionElements = (optionsData: ({value: string, text: string})[]) => {
-    return optionsData.map((e,i) => <option key={i} value={e.value}>{e.text}</option>);
+  const getChainOptions = () => {
+    const availableChains = [ChainName.BNB, ChainName.TON];
+    return availableChains.map((e, i) => <option key={i} value={e}>{e}</option>);
+  }
+
+  const getChainIcon = (chainName: ChainName) => {
+    const icons = {
+      [ChainName.BNB]: bnbIcon,
+      [ChainName.TON]: tonIcon,
+    };
+    return icons[chainName];
   }
 
   return (
     <div>
-
       <div className="flex items-center justify-center mx-5 flex-col sm:flex-row">
         <Selector labelText='' variant={"mid"} value={fromNetwork}
-          onChange={e => setFromNetwork(e.target.value)}
+          onChange={e => setFromNetwork(e.target.value as ChainName)}
           icon={tonIcon}
-          options={getOptionElements([{value: "Toncoin", text: "Toncoin"}])}>
+          options={[<option value={"Toncoin"}>Toncoin</option>]}>
         </Selector>
       </div>
-      <div className="flex items-center justify-center mx-5 mb-5 flex-col sm:flex-row">
+      <div className="flex items-stretch justify-center mx-5 mb-5 flex-col sm:flex-row">
         <Selector labelText='from:' variant={"left"} value={fromNetwork}
-          onChange={e => setFromNetwork(e.target.value)}
-          icon={bnbIcon}
-          options={getOptionElements([{value: "BSC", text: "Binance Smart Chain"}])}>
+          onChange={e => setFromNetwork(e.target.value as ChainName)}
+          icon={getChainIcon(fromNetwork)}
+          options={getChainOptions()}>
         </Selector>
-        {/* <button className="swap-button" onClick={handleSwap}>⇆</button> */}
+        <button className="flex-1 justify-center items-center
+                            flex
+                             rounded-none border border-gray-300 hover:border-gray-300 
+                             sm:border-y sm:border-x-0 border-x-0 border-y-0 text-xl bg-transparent"
+          onClick={() => handleSwap()}>
+          <span className='hidden sm:block'>⇆</span>
+          <span className='sm:hidden'>⇅</span>
+        </button>
         <Selector value={toNetwork} variant={"right"}
-          onChange={e => setToNetwork(e.target.value)}
+          onChange={e => setToNetwork(e.target.value as ChainName)}
           labelText='to:'
-          icon={tonIcon}
-          options={getOptionElements([{value:"TON", text: "The Open Network"}])}>
+          icon={getChainIcon(toNetwork)}
+          options={getChainOptions()}>
         </Selector>
 
       </div>
