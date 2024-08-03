@@ -14,19 +14,23 @@ import { MutationStatus, QueryStatus } from '@tanstack/react-query';
 import { Address, CommonMessageInfo, CommonMessageInfoInternal, TonClient, Transaction } from '@ton/ton';
 import { getHttpEndpoint } from '@orbs-network/ton-access';
 import { getHistoryEntryByTxHash, saveHistoryEntry } from './HistoryStorage';
+import { ChainName } from './ChainName';
 
-interface TransferInfoProps {
-  destinationAddress: string,
+type EVMTransactionDetails = {
   isBridgeLoading: boolean,
   isBridgeSuccess: boolean,
   bridgeTxStatus: QueryStatus,
   bridgeHash: `0x${string}` | undefined,
+}
+interface TransferInfoProps {
+  chainName: ChainName,
+  destinationAddress: string,
+  data:
   amount: string,
   onClickBack: () => void
 }
 const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridgeLoading, isBridgeSuccess, bridgeTxStatus, bridgeHash, amount, onClickBack }) => {
   const [confirmationCountdown, setConfirmationCountdown] = useState(0.0);
-  const reff = useRef(true);
 
   type MyTransactionType = Transaction & {
     inMessage: CommonMessageInfoInternal & {
@@ -36,8 +40,10 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
     }
   }
 
+  // TODO: refactor for reverse direction
   const [destinationTx, setDestinationTx] = useState<MyTransactionType>();
 
+  // TODO: refactor for reverse direction (for example replace 'failed' with 'not found' when source chain is TON)
   const txStatusConfig = {
     "success": { text: "Success!", className: "text-green-500" },
     "pending": { text: "Confirming...", className: "dark:text-gray-300" },
@@ -46,17 +52,26 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
 
   const { text: txStatusText, className: txStatusClassName } = txStatusConfig[bridgeTxStatus];
 
+  // TODO: refactor for reverse direction - saving history entry
   useEffect(() => {
     if (!destinationTx) return;
+    setDestinationTx(destinationTx)
 
-
+    let historyEntry = getHistoryEntryByTxHash(bridgeHash);
+    if (historyEntry && !historyEntry.ton) {
+      let coins = (destinationTx.inMessage.info as CommonMessageInfoInternal).value.coins;
+      historyEntry.destinationReceivedAmount = coins;
+      historyEntry.ton = {
+        txHash: destinationTx.hash().toString("hex"),
+        txLt: destinationTx.lt
+      }
+      saveHistoryEntry(historyEntry);
+    }
   }, [destinationTx]);
 
+  // TODO: refactor for reverse direction - searching for destination tx
   useEffect(() => {
     if (!isBridgeSuccess || !bridgeHash) return;
-
-
-    // console.log(isBridgeSuccess, bridgeHash, destinationAddress)
 
     async function findLastTransaction(predicate: (txHash: string) => boolean) {
       const client = new TonClient({
@@ -81,7 +96,7 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
         let payloadString;
         try {
           payloadString = inMsg.body.beginParse().loadStringTail();
-          if(inMsg.body.beginParse().remainingRefs == 1) {
+          if (inMsg.body.beginParse().remainingRefs == 1) {
             payloadString += inMsg.body.beginParse().loadStringRefTail();
           }
         } catch (error) { continue; }
@@ -116,26 +131,14 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
 
       }
 
-      if (destinationTx) {
-        setDestinationTx(destinationTx)
-
-        let historyEntry = getHistoryEntryByTxHash(bridgeHash);
-        if (historyEntry && !historyEntry.ton) {
-          let coins = (destinationTx.inMessage.info as CommonMessageInfoInternal).value.coins;
-          historyEntry.destinationReceivedAmount = coins;
-          historyEntry.ton = {
-            txHash: destinationTx.hash().toString("hex"),
-            txLt: destinationTx.lt
-          }
-          saveHistoryEntry(historyEntry);
-        }
-      } else {
+      if (!destinationTx) {
         console.log("Failed to find TON transaction for " + bridgeHash);
       }
     })()
 
   }, [isBridgeSuccess, bridgeHash]);
 
+  // TODO: refactor for reverse direction - countdown when waiting for confirmation or searching
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
     const stopCountdown = () => {
@@ -165,7 +168,13 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
   }
 
   function getFormattedToncoinAmountReceivedByDestination() {
-    return stripDecimals(formatUnits((destinationTx?.inMessage.info as CommonMessageInfoInternal).value.coins, networkConfig.ton.tonDecimals))
+    if(!destinationTx) return "";
+    return stripDecimals(
+      formatUnits(
+        (destinationTx.inMessage.info as CommonMessageInfoInternal).value.coins,
+        networkConfig.ton.tonDecimals
+      )
+    );
   }
 
   return <div>
@@ -233,17 +242,17 @@ const TransferInfo: React.FC<TransferInfoProps> = ({ destinationAddress, isBridg
                         : "-"
                   }
                 </span>
-                
-                  {
-                    isBridgeSuccess
-                      ? destinationTx
-                        ? ""
-                        : confirmationCountdown > 0
-                          ? <span className='w-[4ch]'>{confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")}</span>
-                          : <span className=''>Almost there!</span>
-                      : ""
-                  }
-                
+
+                {
+                  isBridgeSuccess
+                    ? destinationTx
+                      ? ""
+                      : confirmationCountdown > 0
+                        ? <span className='w-[4ch]'>{confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")}</span>
+                        : <span className=''>Almost there!</span>
+                    : ""
+                }
+
               </a>
               <div className={`font-medium text-black-500`}>
               </div>

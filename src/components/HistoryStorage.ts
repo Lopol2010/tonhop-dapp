@@ -7,12 +7,13 @@ export type HistoryEntry = {
   bridgeRecievedAmount: string,
   destinationReceivedAmount?: bigint,
   destinationAddress: string,
-  bsc: {
+  // TODO: these maybe need refactor
+  bnb?: {
     txHash: `0x${string}`,
     status: string,
   },
   ton?: {
-    // NOTE: only holds transaction of DESTINATION adress, and not bridge's wallet address
+    // NOTE: only holds input tx of destination adress
     txHash: string,
     txLt: bigint
   }
@@ -31,7 +32,7 @@ export function saveHistoryEntry(entry: HistoryEntry) {
 
   let historyArray = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]") as HistoryEntry[];
 
-  let savedIndex = historyArray.findIndex((e) => e.bsc.txHash == entry.bsc.txHash);
+  let savedIndex = historyArray.findIndex((e) => e.bnb.txHash == entry.bnb.txHash);
   if(savedIndex != -1) {
       historyArray[savedIndex] = entry;
   } else {
@@ -45,7 +46,7 @@ export function getHistoryEntryByTxHash(txHash: string) {
 
   let historyArray = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]") as HistoryEntry[];
 
-  return historyArray.find(entry => entry.bsc.txHash === txHash);
+  return historyArray.find(entry => entry.bnb.txHash === txHash);
 
 }
 

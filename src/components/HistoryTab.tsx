@@ -87,8 +87,8 @@ const HistoryTab: React.FC<TransferInfoProps> = () => {
             {(entry.bridgeRecievedAmount) ? entry.bridgeRecievedAmount + " WTON" : "-"}
           </div>
           <div className='flex-1'>
-            <a href={networkConfig.bsc.getExplorerLink(entry.bsc.txHash)} target='_blank'>
-              {formatTxHexHash(entry.bsc.txHash)}
+            <a href={networkConfig.bsc.getExplorerLink(entry.bnb.txHash)} target='_blank'>
+              {formatTxHexHash(entry.bnb.txHash)}
             </a>
           </div>
           <div className='flex-1'>

@@ -1,7 +1,7 @@
 import './App.css';
 import MainTransferPanel from './components/MainTransferPanel';
 import {Navbar } from './components/Navbar';
-import TransferAssets from './components/TransferAssets';
+import TransferAssetsTab from './components/TransferAssetsTab';
 
 function App() {
   return (

@@ -1,21 +1,19 @@
 // src/components/TransferAssets.js
-
 import { useEffect, useState } from 'react';
 import '../App.css';
 import { useAccount, useBalance, useConfig, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { bridgeAbi } from '../generated';
 import { erc20Abi } from 'viem';
 import { networkConfig } from '../networkConfig';
-import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
+import { hasTestnetFlag, isValidTonAddress, parseWTON } from '../utils';
 import { ConnectKitButton } from 'connectkit';
 import { readContract } from 'wagmi/actions';
-import TransferInfo from './TransferInfo';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import HistoryTab from './HistoryTab';
 import { HistoryEntry, saveHistoryEntry } from './HistoryStorage';
-import NetworkSelector from './NetworkSelector';
+import TransferAssetsTab from './TransferAssetsTab';
 
-const TransferAssets = () => {
+const MainTransferPanel = () => {
   const [warning, setWarning] = useState("");
   const [isValidAmountString, setIsValidAmountString] = useState(false);
   const [amount, setAmount] = useState("");
@@ -98,7 +96,7 @@ const TransferAssets = () => {
       date: Date.now(),
       bridgeRecievedAmount: amount,
       destinationAddress: destinationAddress,
-      bsc: {
+      bnb: {
         txHash: bridgeHash,
         status: bridgeTxStatus,
       }
@@ -219,88 +217,14 @@ const TransferAssets = () => {
               selectedClassName="group selected !border-solid outline-none">
               <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200'>Transfer Assets</h3>
             </Tab>
-            <Tab className="border-none border-b-[3px] border-blue-500 ml-8 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400"
+            <Tab className="border-none border-b-[3px] border-blue-500 cursor-pointer text-left text-lg font-bold text-gray-400 dark:text-gray-400 ml-8"
               selectedClassName="group selected !border-solid outline-none">
               <h3 className='group-[.selected]:text-black group-[.selected]:dark:text-gray-200 text-left text-lg font-bold'>History</h3>
             </Tab>
           </TabList>
         </div>
-        <TabPanel forceRender={true}                 className={`${tabIndex == 0 ? "block" : "hidden"}`}>
-          {
-            isShowInfo
-              // true
-              ? <TransferInfo isBridgeLoading={isBridgeLoading}
-                isBridgeSuccess={isBridgeSuccess}
-                bridgeHash={bridgeHash}
-                destinationAddress={destinationAddress}
-                bridgeTxStatus={bridgeTxStatus}
-                amount={amount}
-                onClickBack={() => setIsShowInfo(false)}
-                // className={`${tabIndex == 0 ? "block" : "hidden"}`}>
-                >
-              </TransferInfo>
-              // ? <TransferInfo isBridgeLoading={true} 
-              //   isBridgeSuccess={true}
-              //   destinationAddress={"UQC_pxTeZV0YIxOhOWRyJpuni-ab-68Akldrl6pvhZ3BcgV8"}
-              //   bridgeTxStatus={bridgeTxStatus}
-              //   bridgeHash={"0x111848c5de1389edd9e18c9b80c9b4e5c5186725e5f55ee77cf01044ed6233f7"}
-              //   amount={"0.05"}
-              //   onClickBack={() => setIsShowInfo(false)}>
-              // </TransferInfo>
-              : <div>
-                <div className="form-group mt-8">
-                  <div className='flex mx-5 mb-2'>
-                    <div className='flex-1 text-left font-medium'>Asset</div>
-                  </div>
-                  <NetworkSelector></NetworkSelector>
-                  <div className='flex mx-5 mb-2'>
-                    <div className='flex-1 text-left font-medium'>Amount</div>
-                    <div className='flex-1 text-right font-medium'>
-                      <span className='text-gray-400'>balance: </span>
-                      {
-                        wtonBalance
-                          ? <span className='cursor-pointer dark:text-gray-300' onClick={() => wtonBalance ? setAmount(formatWTON(wtonBalance.value)) : ""}>
-                            {stripDecimals(formatWTON(wtonBalance.value))}
-                          </span>
-                          : "-"
-                      }
-                    </div>
-                  </div>
-                  <input className="w-[calc(100%-40px)]
-                          p-3 mx-5 mb-5
-                          bg-gray-100
-                          outline-blue-500
-                          border border-solid border-gray-300 rounded-md
-                          dark:bg-gray-700
-                          dark:border-none
-                          dark:outline-gray-100"
-                    placeholder='0.0' type="text" value={amount} onChange={onAmountInputChange} />
-
-                  <div className='flex mx-5 mb-2'>
-                    <div className='flex-1 text-left font-medium'>Recipient</div>
-                  </div>
-                  <input className="w-[calc(100%-40px)]
-                          p-3 mx-5 mb-[5px]
-                          bg-gray-100 
-                          outline-blue-500
-                          border border-solid border-gray-300 rounded-md
-                          dark:bg-gray-700
-                          dark:border-none
-                          dark:outline-gray-100"
-                    type="text" placeholder='TON address...' value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} />
-                </div>
-                {
-                  !isValidAmountString
-                    ? ""
-                    : <div className='font-medium  text-gray-400'>You'll receive ~{stripDecimals(formatWTON(parseWTON(amount) - parseWTON("0.008")))} Toncoin</div>
-                }
-                {getButton()}
-                <div className='font-medium text-sm text-gray-400'>
-                  {/* <div>Bridge fee: {networkConfig.bridgeFee} TON </div> */}
-                  <div>Network fee: 0.0002 BNB + 0.008 TON</div>
-                </div>
-              </div>
-          }
+        <TabPanel forceRender={true} className={`${tabIndex == 0 ? "block" : "hidden"}`}>
+          <TransferAssetsTab></TransferAssetsTab>
         </TabPanel>
         <TabPanel>
           <HistoryTab></HistoryTab>
@@ -310,4 +234,4 @@ const TransferAssets = () => {
   );
 }
 
-export default TransferAssets;
+export default MainTransferPanel;
