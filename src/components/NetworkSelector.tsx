@@ -1,9 +1,7 @@
-// src/NetworkSelector.js
-
 import { HTMLAttributes, ReactElement, ReactNode, SelectHTMLAttributes, useState } from 'react';
 import bnbIcon from './../../public/bnb-bnb-logo.svg';
 import tonIcon from './../../public/ton_symbol.svg';
-import { ChainName } from './ChainName';
+import { ChainName } from '../types/ChainName';
 
 interface SelectorProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   labelText: string,
@@ -30,11 +28,13 @@ const Selector: React.FC<SelectorProps> = ({ value, onChange, labelText, options
 }
 
 interface NetworkSelectorProps {
-  onSelect: (newDirection: { from: ChainName, to: ChainName }) => void
+  onSelect: (newDirection: { from: ChainName, to: ChainName }) => void,
+  fromNetwork: ChainName,
+  setFromNetwork: (network: ChainName) => void;
 }
 
-const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect}) => {
-  const [fromNetwork, setFromNetwork] = useState(ChainName.BNB);
+const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect, fromNetwork, setFromNetwork}) => {
+  // const [fromNetwork, setFromNetwork] = useState(ChainName.BNB);
   const [toNetwork, setToNetwork] = useState(ChainName.TON);
 
   const handleSwap = () => {
@@ -63,7 +63,7 @@ const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect}) => {
         <Selector labelText='' variant={"mid"} value={fromNetwork}
           onChange={e => setFromNetwork(e.target.value as ChainName)}
           icon={tonIcon}
-          options={[<option value={"Toncoin"}>Toncoin</option>]}>
+          options={[<option key={0} value={"Toncoin"}>Toncoin</option>]}>
         </Selector>
       </div>
       <div className="flex items-stretch justify-center mx-5 mb-5 flex-col sm:flex-row">

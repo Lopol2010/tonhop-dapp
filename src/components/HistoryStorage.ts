@@ -1,12 +1,7 @@
-// src/components/TransferAssets.js
-
-import '../App.css';
-
 export type HistoryEntry = {
   date: EpochTimeStamp,
-  bridgeRecievedAmount: string,
-  destinationReceivedAmount?: bigint,
-  destinationAddress: string,
+  amount: string,
+  destinationAddress: string | `0x${string}`,
   // TODO: these maybe need refactor
   bnb?: {
     txHash: `0x${string}`,
@@ -30,9 +25,9 @@ const HISTORY_STORAGE_KEY = "history";
 
 export function saveHistoryEntry(entry: HistoryEntry) {
 
-  let historyArray = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]") as HistoryEntry[];
+  let historyArray = getAllHistoryEntries();
 
-  let savedIndex = historyArray.findIndex((e) => e.bnb.txHash == entry.bnb.txHash);
+  let savedIndex = historyArray.findIndex((e) => e.bnb?.txHash == entry.bnb?.txHash);
   if(savedIndex != -1) {
       historyArray[savedIndex] = entry;
   } else {
@@ -44,9 +39,9 @@ export function saveHistoryEntry(entry: HistoryEntry) {
 
 export function getHistoryEntryByTxHash(txHash: string) {
 
-  let historyArray = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || "[]") as HistoryEntry[];
+  let historyArray = getAllHistoryEntries();
 
-  return historyArray.find(entry => entry.bnb.txHash === txHash);
+  return historyArray.find(entry => entry.bnb?.txHash === txHash);
 
 }
 

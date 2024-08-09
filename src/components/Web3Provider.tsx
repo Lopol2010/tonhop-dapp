@@ -5,11 +5,11 @@ import { networkConfig } from "../networkConfig";
 
 const defaultConfig = getDefaultConfig({
   // Your dApps chains
-  chains: [networkConfig.bsc.chain],
+  chains: [networkConfig.bnb.chain],
   transports: {
     // RPC URL for each chain
-    [networkConfig.bsc.chain.id]: http(
-      `${import.meta.env.VITE_BSC_RPC_URL}`,
+    [networkConfig.bnb.chain.id]: http(
+      // `${import.meta.env.VITE_BSC_RPC_URL}`,
     ),
   },
 

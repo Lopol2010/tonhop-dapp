@@ -1,18 +1,9 @@
-// src/components/TransferAssets.js
-
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { formatUnits } from 'viem';
 import '../App.css';
-import { useAccount, useAccountEffect, useBalance, useConfig, useReadContract, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { bridgeAbi } from '../generated';
-import { erc20Abi, formatUnits, parseUnits } from 'viem';
 import { networkConfig } from '../networkConfig';
-import warningSign from "../assets/warning.webp"
-import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
-import { ConnectKitButton } from 'connectkit';
-import { getBalance, readContract } from 'wagmi/actions';
-import { MutationStatus, QueryStatus } from '@tanstack/react-query';
+import { stripDecimals } from '../utils/utils';
 import { getAllHistoryEntries, HistoryEntry } from './HistoryStorage';
-import TransferInfo from './TransferInfo';
 
 interface TransferInfoProps {
 }
@@ -87,7 +78,7 @@ const HistoryTab: React.FC<TransferInfoProps> = () => {
             {(entry.bridgeRecievedAmount) ? entry.bridgeRecievedAmount + " WTON" : "-"}
           </div>
           <div className='flex-1'>
-            <a href={networkConfig.bsc.getExplorerLink(entry.bnb.txHash)} target='_blank'>
+            <a href={networkConfig.bnb.getExplorerLink(entry.bnb.txHash)} target='_blank'>
               {formatTxHexHash(entry.bnb.txHash)}
             </a>
           </div>

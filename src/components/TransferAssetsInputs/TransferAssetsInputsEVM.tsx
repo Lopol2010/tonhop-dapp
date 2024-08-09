@@ -1,25 +1,29 @@
-// src/components/TransferAssets.js
-
-import { useEffect, useState } from 'react';
-import '../App.css';
-import { useAccount, useBalance, useConfig, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { bridgeAbi } from '../generated';
-import { erc20Abi } from 'viem';
-import { networkConfig } from '../networkConfig';
-import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../utils';
 import { ConnectKitButton } from 'connectkit';
+import { useEffect, useState } from 'react';
+import { erc20Abi } from 'viem';
+import { useAccount, useBalance, useConfig, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { readContract } from 'wagmi/actions';
-import TransferInfo from './TransferInfo';
-import { HistoryEntry, saveHistoryEntry } from './HistoryStorage';
-import NetworkSelector from './NetworkSelector';
-import TransferAssetsInputs from './TransferAssetsInputs';
+import { bridgeAbi } from '../../generated';
+import { networkConfig } from '../../networkConfig';
+import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../../utils/utils';
+import { HistoryEntry, saveHistoryEntry } from '../HistoryStorage';
 import TextInput from './TextInput';
+import TransferAssetsInputs from './TransferAssetsInputs';
 
-const TransferAssetsInputsEVM = ({ onBridgeTransactionSent }: any) => {
+interface TransferAssetsInputsEVMProps {
+  onBridgeTransactionSent: (data: {
+    transactionSenderAddress: string | undefined,
+    transactionHash: `0x${string}` | undefined,
+    destinationAddress: string | undefined,
+    amount: string
+  }) => void
+}
+
+const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBridgeTransactionSent }) => {
   const [warning, setWarning] = useState("");
   const [isValidAmountString, setIsValidAmountString] = useState(false);
   const [amount, setAmount] = useState("");
-  const [bridgeChain, setBridgeChain] = useState(networkConfig.bsc.chain);
+  const [bridgeChain, setBridgeChain] = useState(networkConfig.bnb.chain);
   const [allowance, setAllowance] = useState(0n);
   const [isShowInfo, setIsShowInfo] = useState(false);
   const { chains, switchChain } = useSwitchChain()
@@ -53,8 +57,8 @@ const TransferAssetsInputsEVM = ({ onBridgeTransactionSent }: any) => {
         return;
       }
 
-      if (parseWTON(amount) < parseWTON(networkConfig.bsc.minAmount)) {
-        setWarning(`Minimum amount is ${networkConfig.bsc.minAmount} TON`);
+      if (parseWTON(amount) < parseWTON(networkConfig.bnb.minAmount)) {
+        setWarning(`Minimum amount is ${networkConfig.bnb.minAmount} TON`);
         return;
       }
 
@@ -87,29 +91,32 @@ const TransferAssetsInputsEVM = ({ onBridgeTransactionSent }: any) => {
     setWarning("");
   });
 
+// TODO:
+  // useEffect(() => {
+  //   if (!isBridgeSuccess || !bridgeHash) return;
 
-  useEffect(() => {
-    if (!isBridgeSuccess || !bridgeHash) return;
+  //   let newHistoryEntry: HistoryEntry = {
+  //     date: Date.now(),
+  //     bridgeRecievedAmount: amount,
+  //     destinationAddress: destinationAddress,
+  //     bnb: {
+  //       txHash: bridgeHash,
+  //       status: bridgeTxStatus,
+  //     }
+  //   };
 
-    let newHistoryEntry: HistoryEntry = {
-      date: Date.now(),
-      bridgeRecievedAmount: amount,
-      destinationAddress: destinationAddress,
-      bnb: {
-        txHash: bridgeHash,
-        status: bridgeTxStatus,
-      }
-    };
+  //   saveHistoryEntry(newHistoryEntry)
 
-    saveHistoryEntry(newHistoryEntry)
-
-  }, [isBridgeSuccess, bridgeHash]);
+  // }, [isBridgeSuccess, bridgeHash]);
 
   useEffect(() => {
     if (bridgeRequestStatus === "success" && bridgeHash) {
-      onBridgeTransactionSent(true)
-    } else {
-      onBridgeTransactionSent(false)
+      onBridgeTransactionSent({
+        transactionSenderAddress: address,
+        destinationAddress,
+        amount,
+        transactionHash: bridgeHash
+      })
     }
   }, [bridgeRequestStatus, bridgeHash])
 
@@ -220,7 +227,7 @@ const TransferAssetsInputsEVM = ({ onBridgeTransactionSent }: any) => {
       amountInput={<TextInput value={amount} onChange={onAmountInputChange} placeholder='0.0' />}
       destinationAddressInput={<TextInput value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} placeholder='TON address...' />}
       formattedEstimatedReceiveAmount={getFormattedEstimatedReceiveAmount()}
-      onClickUserBalance={() => wtonBalance && setAmount(formatWTON(wtonBalance.value)) }
+      onClickUserBalance={() => wtonBalance && setAmount(formatWTON(wtonBalance.value))}
     />
   )
 }

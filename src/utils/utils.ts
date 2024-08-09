@@ -1,6 +1,6 @@
 import { Address } from "@ton/ton";
 import { formatUnits, parseUnits } from "viem";
-import { networkConfig } from "./networkConfig";
+import { networkConfig } from "../networkConfig";
 
 
 // export let parseWTON = (amountA: string) => parseUnits(amountA, 9);
@@ -18,7 +18,11 @@ export function stripDecimals(amount: string) {
     return amount.replace(/(\d+)(\.?\d{0,4})\d*/g, "$1$2");
 }
 export function formatWTON(value: bigint) {
-    const formattedAmountString = formatUnits(value, networkConfig.bsc.wtonDecimals);
+    const formattedAmountString = formatUnits(value, networkConfig.bnb.wtonDecimals);
+    return formattedAmountString;
+}
+export function formatTON(value: bigint) {
+    const formattedAmountString = formatUnits(value, networkConfig.ton.tonDecimals);
     return formattedAmountString;
 }
 
@@ -28,12 +32,12 @@ export function calcReceiveAmount(inputAmountBNB: string) {
         - convertDecimals(
             parseTON("0.06") + parseTON(networkConfig.bridgeFee),
             networkConfig.ton.tonDecimals,
-            networkConfig.bsc.wtonDecimals
+            networkConfig.bnb.wtonDecimals
         )
 }
 
 
-export const parseWTON = (amount: string) => parseUnits(amount, networkConfig.bsc.wtonDecimals);
+export const parseWTON = (amount: string) => parseUnits(amount, networkConfig.bnb.wtonDecimals);
 export const parseTON = (amount: string) => parseUnits(amount, networkConfig.ton.tonDecimals);
 
 export function isValidTonAddress(address: string) {
