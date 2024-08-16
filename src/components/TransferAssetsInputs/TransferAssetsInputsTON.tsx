@@ -6,7 +6,7 @@ import { networkConfig } from '../../networkConfig';
 import { convertDecimals, formatTON, formatWTON, hasTestnetFlag, isValidTonAddress, parseTON, stripDecimals } from '../../utils/utils';
 import { ConnectKitButton } from 'connectkit';
 import { readContract } from 'wagmi/actions';
-import { HistoryEntry, saveHistoryEntry } from '../HistoryStorage';
+import { saveHistoryEntry } from '../HistoryStorage';
 import TransferAssetsInputs from './TransferAssetsInputs';
 import TextInput from './TextInput';
 import { useTonClient } from '../../hooks/useTonClient';
@@ -14,14 +14,16 @@ import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react';
 import { Address, beginCell } from '@ton/core';
 
 interface TransferAssetsInputsTONProps {
-  onBridgeTransactionSent: (data: {
+  onBeforeBridgeTransactionSent: (data: {
     transactionSenderAddress: string | undefined,
     destinationAddress: `0x${string}` | undefined,
-    amount: string
+    amount: string,
+    memo: string,
   }) => void
+  onAfterBridgeTransactionSent: () => void;
 }
 
-const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBridgeTransactionSent }) => {
+const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBeforeBridgeTransactionSent, onAfterBridgeTransactionSent }) => {
   const [warning, setWarning] = useState("");
   const [isValidAmountString, setIsValidAmountString] = useState(false);
   const [userBalance, setUserBalance] = useState<bigint | undefined>();
@@ -80,25 +82,6 @@ const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBri
     setWarning("");
   });
 
-
-  // TODO: should save TON tx in history, maybe move this logic to txinfo component
-  // useEffect(() => {
-  //   if (!isBridgeSuccess || !bridgeHash) return;
-
-  //   let newHistoryEntry: HistoryEntry = {
-  //     date: Date.now(),
-  //     bridgeRecievedAmount: amount,
-  //     destinationAddress: destinationAddress,
-  //     bnb: {
-  //       txHash: bridgeHash,
-  //       status: bridgeTxStatus,
-  //     }
-  //   };
-
-  //   saveHistoryEntry(newHistoryEntry)
-
-  // }, [isBridgeSuccess, bridgeHash]);
-
   useEffect(() => {
     handleValidation();
   }, [amount, destinationAddress])
@@ -108,11 +91,18 @@ const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBri
 
     let parsedAmount = parseTON(amount);
 
+    const memo: string = (Math.round(Math.random() * 10e9) + 1).toString();
     const messageBody = beginCell()
       .storeUint(0, 32)
-      .storeStringTail(destinationAddress)
+      .storeStringTail(destinationAddress + " " + memo)
       .endCell();
     // const messageBody = destinationAddress;
+    onBeforeBridgeTransactionSent({
+      transactionSenderAddress: tonWallet?.account.address,
+      destinationAddress,
+      amount,
+      memo
+    });
     (async () => {
       try {
         await tonConnectUI.sendTransaction({
@@ -125,14 +115,10 @@ const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBri
           ],
           validUntil: Math.floor(Date.now() / 1000) + 5 * 60
         })
-        onBridgeTransactionSent({
-          transactionSenderAddress: tonWallet?.account.address,
-          destinationAddress,
-          amount
-        });
       } catch (error) {
-        // TODO: should handle error, like should close 'txinfo' or display error there
+        // TODO: should handle error, like should close 'txinfo' or display error 
       }
+      onAfterBridgeTransactionSent();
     })()
   }
 
@@ -171,7 +157,7 @@ const TransferAssetsInputsTON: React.FC<TransferAssetsInputsTONProps> = ({ onBri
     <TransferAssetsInputs userBalance={(userBalance ? stripDecimals(formatTON(userBalance)) : undefined)}
       mainButton={getButton()}
       amountInput={<TextInput value={amount} onChange={onAmountInputChange} placeholder='0.0' />}
-      destinationAddressInput={<TextInput value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} placeholder='BNB address...' />}
+      destinationAddressInput={<TextInput value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value as `0x${string}`); }} placeholder='BNB address...' />}
       formattedEstimatedReceiveAmount={getFormattedEstimatedReceiveAmount()}
       onClickUserBalance={() => userBalance && setAmount(formatTON(userBalance))}
     />

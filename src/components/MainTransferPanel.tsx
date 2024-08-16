@@ -5,11 +5,15 @@ import TransferAssetsTab from './TransferAssetsTab';
 import { ChainName } from '../types/ChainName';
 
 interface MainTransferPanelProps {
-  fromNetwork: ChainName,
-  setFromNetwork: (network: ChainName) => void;
+  networkSelectorState: {
+    fromNetwork: ChainName,
+    setFromNetwork: (network: ChainName) => void;
+    toNetwork: ChainName,
+    setToNetwork: (network: ChainName) => void;
+  }
 }
 
-const MainTransferPanel: React.FC<MainTransferPanelProps> = ({ fromNetwork, setFromNetwork }) => {
+const MainTransferPanel: React.FC<MainTransferPanelProps> = ({networkSelectorState}) => {
   const [tabIndex, setTabIndex] = useState(0);
 
   return (
@@ -28,7 +32,7 @@ const MainTransferPanel: React.FC<MainTransferPanelProps> = ({ fromNetwork, setF
           </TabList>
         </div>
         <TabPanel forceRender={true} className={`${tabIndex == 0 ? "block" : "hidden"}`}>
-          <TransferAssetsTab fromNetwork={fromNetwork} setFromNetwork={setFromNetwork}></TransferAssetsTab>
+          <TransferAssetsTab networkSelectorState={networkSelectorState}></TransferAssetsTab>
         </TabPanel>
         <TabPanel>
           <HistoryTab></HistoryTab>

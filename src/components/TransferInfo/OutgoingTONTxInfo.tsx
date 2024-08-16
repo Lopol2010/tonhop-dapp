@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { networkConfig } from '../../networkConfig';
+import { formatTxHexHash } from '../../utils/utils';
 
 interface OutgoingTONTxInfoProps {
   destinationAddress: string | undefined,
@@ -38,9 +39,6 @@ const OutgoingTONTxInfo: React.FC<OutgoingTONTxInfoProps> = ({ destinationAddres
   }, [isActive, countdownTime])
 
 
-  function formatTxHexHash(hash: string) {
-    return hash.replace(/^(.{6}).+(.{5})$/g, "$1...$2");
-  }
 
   return (
     // isBridgeSuccess

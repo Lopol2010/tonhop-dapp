@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { erc20Abi, formatUnits, isAddress, Transaction as EVMTransaction, createPublicClient, WatchContractEventReturnType } from 'viem';
 import { networkConfig } from '../../networkConfig';
 import { stripDecimals } from '../../utils/utils';
 import { QueryStatus } from '@tanstack/react-query';
 import { Address, CommonMessageInfoInternal, Transaction } from '@ton/ton';
-import { getHistoryEntryByTxHash, saveHistoryEntry } from '../HistoryStorage';
+import { CrosschainTransfer, getHistoryEntryById, saveHistoryEntry } from '../HistoryStorage';
 import { ChainName } from '../../types/ChainName';
 import useFindTonTransaction from '../../hooks/useFindTonTransaction';
 import IncomingEVMTxInfo from './IncomingEVMTxInfo';
@@ -18,42 +18,53 @@ interface TransferInfoTONToBNBProps {
   destinationAddress: `0x${string}` | undefined,
   amount: string | undefined,
   transactionSenderAddress: string | undefined,
+  memo: string | undefined,
+  transferStartTimestamp: number,
   onClickBack: () => void
 }
 
-const TransferInfoTONToBNB: React.FC<TransferInfoTONToBNBProps> = ({ transactionSenderAddress, destinationAddress, amount, onClickBack }) => {
+const TransferInfoTONToBNB: React.FC<TransferInfoTONToBNBProps> = ({ memo, transferStartTimestamp, transactionSenderAddress, destinationAddress, amount, onClickBack }) => {
 
+  const [outgoingTransaction, setOutgoingTransaction] = useState<`0x${string}`>();
+
+  function extractPayload(tx: Transaction) {
+    if (!tx.inMessage) return null;
+
+    let payloadString;
+    let extractedDestinationAddress;
+    let extractedMemo;
+    try {
+      payloadString = tx.inMessage.body.beginParse().loadStringTail();
+      if (tx.inMessage.body.beginParse().remainingRefs == 1) {
+        payloadString += tx.inMessage.body.beginParse().loadStringRefTail();
+      }
+      // remove 4 bytes of zeroes
+      payloadString = payloadString.trim().slice(4);
+      extractedDestinationAddress = payloadString.slice(0, 42);
+      extractedMemo = payloadString.slice(43);
+    } catch (error) {
+      console.log("error parsing payload:", error);
+      return null;
+    }
+    return { extractedDestinationAddress, extractedMemo }
+  }
   const incomingTransaction = useFindTonTransaction(
     networkConfig.ton.highloadWalletAddress.toString(),
-    (tx: Transaction) => {
+    transferStartTimestamp,
+    useCallback((tx: Transaction) => {
       if (!transactionSenderAddress || !destinationAddress || !tx.inMessage?.info.src || !tx.inMessage.info.dest
         || !(tx.inMessage.info.src as Address).equals(Address.parse(transactionSenderAddress))
         || !(tx.inMessage.info.dest as Address).equals(networkConfig.ton.highloadWalletAddress)) {
         return false;
       }
 
-      let payloadString;
-      let extractedDestinationAddress;
-      try {
-        payloadString = tx.inMessage.body.beginParse().loadStringTail();
-        if (tx.inMessage.body.beginParse().remainingRefs == 1) {
-          payloadString += tx.inMessage.body.beginParse().loadStringRefTail();
-        }
-        // remove 4 bytes of zeroes
-        payloadString = payloadString.trim().slice(4);
-        extractedDestinationAddress = payloadString.slice(0, 42);
-      } catch (error) {
-        console.log("error parsing payload:", error);
-        return false;
-      }
-
-      if (!isAddress(extractedDestinationAddress)) return false;
+      const payload = extractPayload(tx);
+      if (!payload || !isAddress(payload.extractedDestinationAddress) || payload.extractedMemo != memo) return false;
 
       return true;
 
-    });
+    }, [destinationAddress, transactionSenderAddress]));
 
-  const [outgoingTransaction, setOutgoingTransaction] = useState<`0x${string}`>();
   useWatchContractEvent({
     address: networkConfig.bnb.wtonAddress,
     abi: erc20Abi,
@@ -69,84 +80,66 @@ const TransferInfoTONToBNB: React.FC<TransferInfoTONToBNBProps> = ({ transaction
     onLogs: logs => {
       console.log("new logs:", logs)
       logs.forEach(log => {
-        console.log(log.args.to , log.args.from
-              , log.args.to && isAddress(log.args.to) , log.args.from && isAddress(log.args.from)
-              , log.args.from == networkConfig.bnb.bridgeWalletAddress
-              , log.args.to == destinationAddress);
-        if (log.args.to && log.args.from
-              && isAddress(log.args.to) && isAddress(log.args.from)
-              && log.args.from == networkConfig.bnb.bridgeWalletAddress
-              && log.args.to == destinationAddress && log.transactionHash) {
+        if (log.args.from == networkConfig.bnb.bridgeWalletAddress
+          && log.args.to == destinationAddress
+          && log.transactionHash) {
           setOutgoingTransaction(log.transactionHash);
         }
       });
     }
   });
-  // const config = useConfig();
-  // const client = usePublicClient({config});
-  // const [w, setw] = useState<WatchContractEventReturnType>();
-  // useEffect(() => {
-  //   if (!client || !destinationAddress) return;
 
-  //   if (!w) {
-  //     console.log("[BNBWatcher] listening at:", networkConfig.bnb.wtonAddress);
-      
-      
-  //     // getBlockNumber(client).then(n => console.log("Block", n))
-      
-  //     let unwatch = client.watchContractEvent( {
-  //       abi: erc20Abi,
-  //       // TODO: try to use dest addr here
-  //       address: networkConfig.bnb.wtonAddress,
-  //       // eventName: "Transfer",
-  //       // fromBlock: 42835172n,
-  //       onError: err => { console.log("[Listener] Error:");  console.dir(err); },
-  //       onLogs: logs => {
-  //         console.log("new logs:", logs)
-  //         logs.forEach(log => {
-  //           // console.log(log.args.to, log.args.from
-  //           //   , log.args.to && isAddress(log.args.to), log.args.from && isAddress(log.args.from)
-  //           //   , log.args.from == networkConfig.bnb.bridgeWalletAddress
-  //           //   , log.args.to == destinationAddress);
-  //           // if (log.args.to && log.args.from
-  //           //   && isAddress(log.args.to) && isAddress(log.args.from)
-  //           //   && log.args.from == networkConfig.bnb.bridgeWalletAddress
-  //           //   && log.args.to == destinationAddress) {
-  //           //   setOutgoingTransaction(outgoingTransaction);
-  //           // }
-  //         })
-  //       }
-  //     });
-  //     setw(unwatch);
-  //     return () => { unwatch(); setw(undefined); console.log("[BNBWatcher] unwatch") };
-  //   }
-  //   return () => { if(w) {w(); setw(undefined); console.log("[BNBWatcher] unwatch")} };
-  // }, [destinationAddress, client])
+  useEffect(() => {
+    if (!incomingTransaction || !incomingTransaction.inMessage || !destinationAddress) return;
 
-  // useEffect(() => {
-  //   if (!incomingTransaction) return;
+    let inTxHash = incomingTransaction.hash().toString("base64");
+    let isAlreadyStored = getHistoryEntryById(inTxHash as string) !== undefined;
+    if (isAlreadyStored) return;
 
-  //   let historyEntry = getHistoryEntryByTxHash(transactionHash as string);
-  //   if (historyEntry && !historyEntry.ton) {
-  //     let toncoinAmount = (incomingTransaction.inMessage.info as CommonMessageInfoInternal).value.coins;
-  //     // historyEntry.destinationReceivedAmount = toncoinAmount;
-  //     historyEntry.ton = {
-  //       txHash: incomingTransaction.hash().toString("hex"),
-  //       txLt: incomingTransaction.lt
-  //     }
-  //     saveHistoryEntry(historyEntry);
-  //   }
-  // }, [incomingTransaction]);
+    let extractedPayload = extractPayload(incomingTransaction);
+    if(!extractedPayload) return;
 
-  function formatTxHexHash(hash: string) {
-    return hash.replace(/^(\w{6})\w+(\w{5})$/g, "$1...$2");
-  }
+    let toncoinAmount = (incomingTransaction.inMessage.info as CommonMessageInfoInternal).value.coins
+      - incomingTransaction.totalFees.coins;
+    let historyEntry: CrosschainTransfer = {
+      id: inTxHash,
+      createdAt: Date.now() / 1000,
+      destinationAddress: destinationAddress as string,
+      amountReceived: toncoinAmount.toString(),
+      sourceTransaction: {
+        type: "TON",
+        hash: inTxHash,
+        lt: incomingTransaction.lt.toString(),
+        memo: extractedPayload.extractedMemo
+      }
+    }
+    saveHistoryEntry(historyEntry);
+  }, [incomingTransaction, destinationAddress]);
+
+  useEffect(() => {
+    if (!outgoingTransaction || !incomingTransaction || !destinationAddress) return;
+
+    let inTxHash = incomingTransaction.hash().toString("base64");
+    let historyEntry = getHistoryEntryById(inTxHash as string);
+    if(historyEntry && !historyEntry.destinationTransaction) {
+      historyEntry.destinationTransaction = {
+        type: "EVM",
+        chainId: "",
+        txHash: outgoingTransaction
+      }
+      saveHistoryEntry(historyEntry);
+    }
+
+  }, [outgoingTransaction, incomingTransaction, destinationAddress, amount]);
+
+
 
   function getFormattedToncoinAmountReceivedByDestination() {
     if (!incomingTransaction) return undefined;
     return stripDecimals(
       formatUnits(
-        (incomingTransaction.inMessage?.info as CommonMessageInfoInternal).value.coins,
+        (incomingTransaction.inMessage?.info as CommonMessageInfoInternal).value.coins
+        - incomingTransaction.totalFees.coins,
         networkConfig.ton.tonDecimals
       )
     );
@@ -158,13 +151,12 @@ const TransferInfoTONToBNB: React.FC<TransferInfoTONToBNBProps> = ({ transaction
       transactionHash={incomingTransaction?.hash().toString("base64")}
       transactionLT={incomingTransaction?.lt}
       amount={getFormattedToncoinAmountReceivedByDestination()}
-      isActive={true}
     />
 
     <OutgoingEVMTxInfo transactionHash={outgoingTransaction}
-      transactionStatus={"pending"}
       destinationAddress={destinationAddress}
-      amount={amount}
+      amount={getFormattedToncoinAmountReceivedByDestination()}
+      isActive={incomingTransaction != undefined}
     />
 
     <button className="w-[calc(100%-40px)] m-5 px-5 py-2 text-gray border border-solid border-gray-300 dark:border-gray-500 bg-gray-100 dark:bg-gray-700"

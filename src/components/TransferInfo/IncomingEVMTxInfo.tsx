@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { networkConfig } from '../../networkConfig';
 import { QueryStatus } from '@tanstack/react-query';
+import { formatTxHexHash, formatWTON, stripDecimals } from '../../utils/utils';
 
 interface IncomingEVMTxInfoProps {
   transactionStatus: QueryStatus,
@@ -46,9 +47,6 @@ const IncomingEVMTxInfo: React.FC<IncomingEVMTxInfoProps> = ({ destinationAddres
   }, [transactionStatus, countdownTime])
 
 
-  function formatTxHexHash(hash: string) {
-    return hash.replace(/^(\w{6})\w+(\w{5})$/g, "$1...$2");
-  }
 
 
   return (<div>
@@ -64,7 +62,7 @@ const IncomingEVMTxInfo: React.FC<IncomingEVMTxInfoProps> = ({ destinationAddres
               <div className='text-left '>Status: </div>
             </div>
             <div className='flex-1 text-left' >
-              <div className=' font-medium '>{amount ? amount + " WTON" : "-"}</div>
+              <div className=' font-medium '>{amount ? stripDecimals(formatWTON(BigInt(amount))) + " WTON" : "-"}</div>
               <div className=' font-medium '>
                 <a className='flex dark:text-blue-400' href={transactionHash ? networkConfig.bnb.getExplorerLink(transactionHash) : ""} target='_blank'>
                   <span className=''>

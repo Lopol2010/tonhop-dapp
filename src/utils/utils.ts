@@ -13,6 +13,11 @@ export const convertDecimals = (amountA: bigint, decimalsA: number, decimalsB: n
     return amountA;
 }
 
+export function formatTxHexHash(hash: string, beginningChars: number = 6, endChars: number = 5) {
+    // let regex = new RegExp(`/^(.{${beginningChars}}).+(.{${endChars}})$/g`);
+    return hash.slice(0, beginningChars) + "..." + hash.slice(hash.length - endChars);
+}
+
 // limit float to 4 decimals
 export function stripDecimals(amount: string) {
     return amount.replace(/(\d+)(\.?\d{0,4})\d*/g, "$1$2");
@@ -28,7 +33,7 @@ export function formatTON(value: bigint) {
 
 export function calcReceiveAmount(inputAmountBNB: string) {
     console.log(inputAmountBNB)
-    return parseWTON(inputAmountBNB) 
+    return parseWTON(inputAmountBNB)
         - convertDecimals(
             parseTON("0.06") + parseTON(networkConfig.bridgeFee),
             networkConfig.ton.tonDecimals,

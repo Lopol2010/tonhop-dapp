@@ -15,11 +15,15 @@ function App() {
   }
 
   const [fromNetwork, setFromNetwork] = useState(ChainName.BNB);
+  const [toNetwork, setToNetwork] = useState(ChainName.TON);
   return (
     <TonConnectUIProvider manifestUrl={manifestUrl}>
       <div className="App dark:bg-gray-700 h-full text-black dark:text-gray-300">
         <Navbar fromNetwork={fromNetwork}></Navbar>
-        <MainTransferPanel fromNetwork={fromNetwork} setFromNetwork={setFromNetwork}></MainTransferPanel>
+        <MainTransferPanel networkSelectorState={{
+          fromNetwork, toNetwork,
+          setFromNetwork, setToNetwork
+        }}></MainTransferPanel>
       </div>
     </TonConnectUIProvider>
   );

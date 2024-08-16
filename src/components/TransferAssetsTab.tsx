@@ -6,20 +6,28 @@ import TransferAssetsInputsEVM from './TransferAssetsInputs/TransferAssetsInputs
 import { ChainName } from '../types/ChainName';
 import TransferAssetsInputsTON from './TransferAssetsInputs/TransferAssetsInputsTON';
 import TransferInfoTONToBNB from './TransferInfo/TransferInfoTONToBNB';
+import { bridgeAbi } from '../generated';
 
 interface TransferAssetsTabProps {
-  fromNetwork: ChainName,
-  setFromNetwork: (network: ChainName) => void;
+  networkSelectorState: {
+    fromNetwork: ChainName,
+    setFromNetwork: (network: ChainName) => void;
+    toNetwork: ChainName,
+    setToNetwork: (network: ChainName) => void;
+  }
 }
-const TransferAssetsTab: React.FC<TransferAssetsTabProps> = ({ fromNetwork, setFromNetwork }) => {
+const TransferAssetsTab: React.FC<TransferAssetsTabProps> = ({ networkSelectorState }) => {
   const [shouldShowInfo, setShouldShowInfo] = useState(false);
   const [amount, setAmount] = useState<string>();
+  const [memo, setMemo] = useState<string>();
   const [destinationAddress, setDestinationAddress] = useState<string>();
   const [transactionSenderAddress, setTransactionSenderAddress] = useState<string>();
-  const [transactionHash, setTransactionHash] = useState<`0x${string}`>();
+  const [transferStartTimestamp, setTransferStartTimestamp] = useState<number>(Date.now() / 1000);
 
-  const { isLoading: isLoading, isSuccess: isSuccess, status } = useWaitForTransactionReceipt({
-    hash: transactionHash,
+  const { writeContract: writeBridge, data: bridgeTxHash, status: bridgeRequestStatus, reset } = useWriteContract()
+
+  const { isLoading: isBridgeTxLoading, isSuccess: isBridgeTxSuccess, status: bridgeTxStatus } = useWaitForTransactionReceipt({
+    hash: bridgeTxHash,
   })
 
   // useEffect(() => {
@@ -30,16 +38,19 @@ const TransferAssetsTab: React.FC<TransferAssetsTabProps> = ({ fromNetwork, setF
     shouldShowInfo
       // true
       // TODO: refactor to support reverse direction
-      ? fromNetwork == ChainName.TON
+      ? networkSelectorState.fromNetwork == ChainName.TON
         ? <TransferInfoTONToBNB destinationAddress={destinationAddress as `0x${string}`}
+          transferStartTimestamp={transferStartTimestamp || Date.now() / 1000}
+          memo={memo}
           amount={amount}
           transactionSenderAddress={transactionSenderAddress}
           onClickBack={() => { setShouldShowInfo(false) }} />
         : <TransferInfoBNBToTON destinationAddress={destinationAddress}
+          transferStartTimestamp={transferStartTimestamp}
           amount={amount}
-          transactionStatus={status}
-          transactionHash={transactionHash}
-          onClickBack={() => { setShouldShowInfo(false) }}
+          transactionStatus={bridgeTxStatus}
+          transactionHash={bridgeTxHash}
+          onClickBack={() => { setShouldShowInfo(false); reset(); }}
         />
       // ? <TransferInfoBNBToTON destinationAddress={"UQC_pxTeZV0YIxOhOWRyJpuni-ab-68Akldrl6pvhZ3BcgV8"}
       //   transactionStatus={bridgeTxStatus}
@@ -53,23 +64,38 @@ const TransferAssetsTab: React.FC<TransferAssetsTabProps> = ({ fromNetwork, setF
             <div className='flex-1 text-left font-medium'>Asset</div>
           </div>
           <NetworkSelector onSelect={(newDirection) => console.log(newDirection)}
-            fromNetwork={fromNetwork} setFromNetwork={setFromNetwork}></NetworkSelector>
+            state={networkSelectorState}></NetworkSelector>
         </div>
         {
-          fromNetwork == ChainName.TON
-            ? <TransferAssetsInputsTON onBridgeTransactionSent={(data) => {
-              setShouldShowInfo(true);
-              setAmount(data.amount);
-              setDestinationAddress(data.destinationAddress);
-              setTransactionSenderAddress(data.transactionSenderAddress);
-            }} />
-            : <TransferAssetsInputsEVM onBridgeTransactionSent={(data) => {
-              setShouldShowInfo(true);
-              setAmount(data.amount);
-              setDestinationAddress(data.destinationAddress);
-              setTransactionSenderAddress(data.transactionSenderAddress);
-              setTransactionHash(data.transactionHash);
-            }} />
+          networkSelectorState.fromNetwork == ChainName.TON
+            ? <TransferAssetsInputsTON
+              onBeforeBridgeTransactionSent={(data) => {
+                setAmount(data.amount);
+                setMemo(data.memo);
+                setDestinationAddress(data.destinationAddress);
+                setTransactionSenderAddress(data.transactionSenderAddress);
+              }}
+              onAfterBridgeTransactionSent={() => {
+                setTransferStartTimestamp(Date.now() / 1000);
+                setShouldShowInfo(true);
+              }} />
+            : <TransferAssetsInputsEVM bridgeRequestStatus={bridgeRequestStatus}
+              bridgeHash={bridgeTxHash}
+              onBridgeButtonClick={(data) => {
+                setAmount(data.amount);
+                setDestinationAddress(data.destinationAddress);
+                setTransactionSenderAddress(data.transactionSenderAddress);
+                writeBridge({
+                  address: import.meta.env.VITE_BRIDGE_ADDRESS,
+                  abi: bridgeAbi,
+                  functionName: "bridge",
+                  args: [BigInt(data.amount), data.destinationAddress]
+                })
+              }}
+              onBridgeRequestSent={() => {
+                setShouldShowInfo(true);
+                setTransferStartTimestamp(Date.now() / 1000);
+              }} />
         }
 
         <div className='font-medium text-sm text-gray-400'>

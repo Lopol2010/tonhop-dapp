@@ -6,31 +6,32 @@ import { readContract } from 'wagmi/actions';
 import { bridgeAbi } from '../../generated';
 import { networkConfig } from '../../networkConfig';
 import { formatWTON, hasTestnetFlag, isValidTonAddress, parseWTON, stripDecimals } from '../../utils/utils';
-import { HistoryEntry, saveHistoryEntry } from '../HistoryStorage';
 import TextInput from './TextInput';
 import TransferAssetsInputs from './TransferAssetsInputs';
+import { FetchStatus, MutationStatus, QueryStatus } from '@tanstack/react-query';
 
 interface TransferAssetsInputsEVMProps {
-  onBridgeTransactionSent: (data: {
+  bridgeHash: `0x${string}` | undefined,
+  bridgeRequestStatus: MutationStatus,
+  onBridgeButtonClick: (data: {
     transactionSenderAddress: string | undefined,
     transactionHash: `0x${string}` | undefined,
-    destinationAddress: string | undefined,
+    destinationAddress: string,
     amount: string
-  }) => void
+  }) => void,
+  onBridgeRequestSent: () => void
 }
 
-const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBridgeTransactionSent }) => {
+const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ bridgeRequestStatus, onBridgeRequestSent, bridgeHash, onBridgeButtonClick }) => {
   const [warning, setWarning] = useState("");
   const [isValidAmountString, setIsValidAmountString] = useState(false);
-  const [amount, setAmount] = useState("");
   const [bridgeChain, setBridgeChain] = useState(networkConfig.bnb.chain);
-  const [allowance, setAllowance] = useState(0n);
-  const [isShowInfo, setIsShowInfo] = useState(false);
   const { chains, switchChain } = useSwitchChain()
-  const [destinationAddress, setDestinationAddress] = useState("");
   const { address, chainId, chain, isConnected } = useAccount();
   const config = useConfig();
-  const [tabIndex, setTabIndex] = useState(0);
+  const [amount, setAmount] = useState<string>("");
+  const [destinationAddress, setDestinationAddress] = useState<string>("");
+  const [allowance, setAllowance] = useState<bigint>(0n);
 
   const { data: wtonBalance, refetch: refetchBalance } = useBalance({
     token: import.meta.env.VITE_WTON_ADDRESS,
@@ -38,7 +39,6 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
   });
 
   const { writeContract: writeApproval, data: approveHash, status: approvalRequestStatus } = useWriteContract()
-  const { writeContract: writeBridge, data: bridgeHash, status: bridgeRequestStatus } = useWriteContract()
 
   const { isLoading: isApprovalLoading, isSuccess: isApprovalSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
@@ -48,7 +48,12 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
     hash: bridgeHash,
   })
 
-  const handleValidation = (() => {
+  useEffect(() => {
+    if (!isBridgeSuccess) return;
+    refetchBalance().then(data => { });
+  }, [isBridgeSuccess, refetchBalance])
+
+  useEffect(() => {
     setIsValidAmountString(false);
     if (amount) {
 
@@ -78,7 +83,7 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
         return;
       }
 
-      // warn when address has testnet flag and wallet is on mainnet 
+      // warn when destination address has testnet flag but connected wallet is on mainnet 
       if (hasTestnetFlag(destinationAddress) && !chain?.testnet) {
         setWarning("Destination address has testnet flag");
         return;
@@ -89,44 +94,6 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
     }
 
     setWarning("");
-  });
-
-// TODO:
-  // useEffect(() => {
-  //   if (!isBridgeSuccess || !bridgeHash) return;
-
-  //   let newHistoryEntry: HistoryEntry = {
-  //     date: Date.now(),
-  //     bridgeRecievedAmount: amount,
-  //     destinationAddress: destinationAddress,
-  //     bnb: {
-  //       txHash: bridgeHash,
-  //       status: bridgeTxStatus,
-  //     }
-  //   };
-
-  //   saveHistoryEntry(newHistoryEntry)
-
-  // }, [isBridgeSuccess, bridgeHash]);
-
-  useEffect(() => {
-    if (bridgeRequestStatus === "success" && bridgeHash) {
-      onBridgeTransactionSent({
-        transactionSenderAddress: address,
-        destinationAddress,
-        amount,
-        transactionHash: bridgeHash
-      })
-    }
-  }, [bridgeRequestStatus, bridgeHash])
-
-  useEffect(() => {
-    if (!isBridgeSuccess) return;
-    refetchBalance().then(data => { });
-  }, [isBridgeSuccess, refetchBalance])
-
-  useEffect(() => {
-    handleValidation();
   }, [amount, destinationAddress])
 
   useEffect(() => {
@@ -147,8 +114,16 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
     return () => clearTimeout(timeoutID);
   }, [config, address, amount])
 
+  useEffect(() => {
+    if (bridgeRequestStatus != "success") return;
+
+    onBridgeRequestSent();
+
+  }, [bridgeRequestStatus])
+
   const handleApprove = () => {
     let parsedAmount = 0n;
+    // assuming that amount is already validated
     parsedAmount = parseWTON(amount);
 
     writeApproval({
@@ -161,15 +136,18 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
 
   const handleTransfer = () => {
     let parsedAmount = 0n;
+    // assuming that amount is already validated
     parsedAmount = parseWTON(amount);
 
-    writeBridge({
-      address: import.meta.env.VITE_BRIDGE_ADDRESS,
-      abi: bridgeAbi,
-      functionName: "bridge",
-      args: [BigInt(parsedAmount), destinationAddress]
+    onBridgeButtonClick({
+      transactionSenderAddress: address,
+      destinationAddress,
+      amount: parsedAmount.toString(),
+      transactionHash: bridgeHash
     })
+
   }
+
 
   const onAmountInputChange = (e: React.ChangeEvent) => {
     let value = (e.target as HTMLInputElement).value;
@@ -222,7 +200,7 @@ const TransferAssetsInputsEVM: React.FC<TransferAssetsInputsEVMProps> = ({ onBri
   }
 
   return (
-    <TransferAssetsInputs userBalance={(wtonBalance ? wtonBalance.value : 0n)}
+    <TransferAssetsInputs userBalance={(wtonBalance ? stripDecimals(formatWTON(wtonBalance.value)) : 0n).toString()}
       mainButton={getButton()}
       amountInput={<TextInput value={amount} onChange={onAmountInputChange} placeholder='0.0' />}
       destinationAddressInput={<TextInput value={destinationAddress} onChange={e => { setDestinationAddress(e.target.value); }} placeholder='TON address...' />}

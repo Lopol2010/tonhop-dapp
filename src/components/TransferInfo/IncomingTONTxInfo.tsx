@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { networkConfig } from '../../networkConfig';
+import { formatTxHexHash } from '../../utils/utils';
 
 interface IncomingTONTxInfoProps {
   destinationAddress: string | undefined,
@@ -7,11 +8,10 @@ interface IncomingTONTxInfoProps {
   transactionHash: string | undefined,
   amount: string | undefined,
   // TODO: remove probably isactive
-  isActive: boolean,
   countdownTime?: number
 }
 
-const IncomingTONTxInfo: React.FC<IncomingTONTxInfoProps> = ({ destinationAddress, transactionHash, amount, isActive, countdownTime = 30.0 }) => {
+const IncomingTONTxInfo: React.FC<IncomingTONTxInfoProps> = ({ destinationAddress, transactionHash, amount, countdownTime = 30.0 }) => {
   const [confirmationCountdown, setConfirmationCountdown] = useState(0.0);
 
   useEffect(() => {
@@ -21,30 +21,25 @@ const IncomingTONTxInfo: React.FC<IncomingTONTxInfoProps> = ({ destinationAddres
       setConfirmationCountdown(0.0);
     };
 
-    if (isActive) {
-      setConfirmationCountdown(countdownTime);
-      // TODO: should rely on timestamp, because setInterval pauses when for example you switch windows
-      intervalId = setInterval(() => {
-        setConfirmationCountdown((currentValue) => {
-          let newValue = currentValue - 0.05;
-          if (newValue <= 0.1) {
-            stopCountdown();
-            newValue = 0.0;
-          }
-          return newValue;
-        });
-      }, 50)
-    }
+    setConfirmationCountdown(countdownTime);
+    // TODO: should rely on timestamp, because setInterval pauses when for example you switch windows
+    intervalId = setInterval(() => {
+      setConfirmationCountdown((currentValue) => {
+        let newValue = currentValue - 0.05;
+        if (newValue <= 0.1) {
+          stopCountdown();
+          newValue = 0.0;
+        }
+        return newValue;
+      });
+    }, 50)
     return stopCountdown;
-  }, [isActive, countdownTime])
+  }, [countdownTime])
 
 
-  function formatTxHexHash(hash: string) {
-    return hash.replace(/^(\w{6})\w+(\w{5})$/g, "$1...$2");
-  }
 
   return (
-    <div className={`mx-5 text-left ${isActive ? "" : "text-gray-400"}`}>
+    <div className={`mx-5 text-left ${""}`}>
       <div className='text-left font-medium text-lg'>TON chain:</div>
       <div className='flex mb-5 mx-5'>
         <div className='mr-5'>
@@ -65,22 +60,18 @@ const IncomingTONTxInfo: React.FC<IncomingTONTxInfoProps> = ({ destinationAddres
               {
                 transactionHash
                   ? formatTxHexHash(transactionHash)
-                  : isActive
-                    ? confirmationCountdown > 0
-                      ? "Searching... "
-                      : ""
-                    : "-"
+                  : confirmationCountdown > 0
+                    ? "Searching... "
+                    : ""
               }
             </span>
 
             {
-              isActive
-                ? transactionHash
-                  ? ""
-                  : confirmationCountdown > 0
-                    ? <span className='w-[4ch]'>{confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")}</span>
-                    : <span className=''>Almost there!</span>
-                : ""
+              transactionHash
+                ? ""
+                : confirmationCountdown > 0
+                  ? <span className='w-[4ch]'>{confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")}</span>
+                  : <span className=''>Almost there!</span>
             }
 
           </a>

@@ -29,19 +29,26 @@ const Selector: React.FC<SelectorProps> = ({ value, onChange, labelText, options
 
 interface NetworkSelectorProps {
   onSelect: (newDirection: { from: ChainName, to: ChainName }) => void,
-  fromNetwork: ChainName,
-  setFromNetwork: (network: ChainName) => void;
+  state: {
+    fromNetwork: ChainName,
+    setFromNetwork: (network: ChainName) => void;
+    toNetwork: ChainName,
+    setToNetwork: (network: ChainName) => void;
+  }
 }
 
-const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect, fromNetwork, setFromNetwork}) => {
+const NetworkSelector: React.FC<NetworkSelectorProps> = ({ onSelect, state }) => {
+  const { fromNetwork, setFromNetwork, toNetwork, setToNetwork } = state;
   // const [fromNetwork, setFromNetwork] = useState(ChainName.BNB);
-  const [toNetwork, setToNetwork] = useState(ChainName.TON);
+  // const [toNetwork, setToNetwork] = useState(ChainName.TON);
 
   const handleSwap = () => {
-    const temp = fromNetwork;
-    setFromNetwork(toNetwork);
-    setToNetwork(temp);
-    onSelect({ from: toNetwork, to: temp });
+    const oldFrom = fromNetwork;
+    const oldTo = toNetwork;
+    setFromNetwork(oldTo);
+    setToNetwork(oldFrom);
+    // console.log(temp, toNetwork)
+    onSelect({ from: oldTo, to: oldFrom });
   }
 
   const getChainOptions = () => {
@@ -61,7 +68,7 @@ const NetworkSelector: React.FC<NetworkSelectorProps> = ({onSelect, fromNetwork,
     <div>
       <div className="flex items-center justify-center mx-5 flex-col sm:flex-row">
         <Selector labelText='' variant={"mid"} value={fromNetwork}
-          onChange={e => setFromNetwork(e.target.value as ChainName)}
+          // onChange={e => setFromNetwork(e.target.value as ChainName)}
           icon={tonIcon}
           options={[<option key={0} value={"Toncoin"}>Toncoin</option>]}>
         </Selector>

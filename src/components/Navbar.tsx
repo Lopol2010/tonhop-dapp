@@ -10,7 +10,7 @@ export const Navbar: React.FC<NavbarProps> = ({ fromNetwork }) => {
   return (
     <nav className="p-5 flex justify-between bg-gray-100 dark:bg-gray-800 border-b border-solid border-gray-300 dark:border-gray-600">
       <div className="flex items-center font-semibold text-2xl">TONHOP</div>
-      <div className="">
+      <div className="h-[42px]">
         {
           fromNetwork == ChainName.TON
             ? <TonConnectButton></TonConnectButton>
