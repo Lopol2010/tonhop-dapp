@@ -43,7 +43,7 @@ const OutgoingEVMTxInfo: React.FC<OutgoingEVMTxInfoProps> = ({ isActive, destina
       setConfirmationCountdown(0.0);
     };
 
-    if (transactionHash) {
+    if (isActive) {
       setConfirmationCountdown(countdown);
       intervalId = setInterval(() => {
         setConfirmationCountdown((currentValue) => {
@@ -57,7 +57,7 @@ const OutgoingEVMTxInfo: React.FC<OutgoingEVMTxInfoProps> = ({ isActive, destina
       }, 50)
     }
     return stopCountdown;
-  }, [transactionHash, countdown])
+  }, [isActive, countdown])
 
 
 
@@ -83,11 +83,11 @@ const OutgoingEVMTxInfo: React.FC<OutgoingEVMTxInfoProps> = ({ isActive, destina
                 </a>
               </div>
               <div className={`font-medium ${txStatusClassName}`}>
-                { txStatusText }
+                { isActive ? txStatusText : "-" }
                 <span className='w-[4ch]'>
                   {
                     (confirmationCountdown > 0 && transactionStatus != "success"
-                      ? confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")
+                      ? " " + confirmationCountdown.toString().replace(/\.(\d{2})\d*/g, ".$1")
                       : "")
                   }
                 </span>
