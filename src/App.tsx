@@ -3,11 +3,22 @@ import './App.css';
 import MainTransferPanel from './components/MainTransferPanel';
 import { Navbar } from './components/Navbar';
 import { ChainName } from './types/ChainName';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
+const STORAGE_VERSION = '2.0'; // Update this when you change your storage schema
 
 let manifestUrl;
 function App() {
+  useEffect(() => {
+    const currentVersion = localStorage.getItem('storageVersion');
+
+    if (currentVersion !== STORAGE_VERSION) {
+      localStorage.clear();
+      localStorage.setItem('storageVersion', STORAGE_VERSION);
+      console.log('Storage cleared and updated to version', STORAGE_VERSION);
+    }
+  }, []);
+
   if(import.meta.env.MODE == "development") {
     manifestUrl = 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json';
   } else {
