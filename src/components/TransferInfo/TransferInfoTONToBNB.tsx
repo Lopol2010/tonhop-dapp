@@ -48,10 +48,13 @@ const TransferInfoTONToBNB: React.FC<TransferInfoTONToBNBProps> = ({ memo, trans
     }
     return { extractedDestinationAddress, extractedMemo }
   }
+
+  console.log("transferStartTimestamp", transferStartTimestamp, memo)
   const incomingTransaction = useFindTonTransaction(
     networkConfig.ton.highloadWalletAddress.toString(),
     transferStartTimestamp,
     useCallback((tx: Transaction) => {
+      console.log(tx)
       if (!transactionSenderAddress || !destinationAddress || !tx.inMessage?.info.src || !tx.inMessage.info.dest
         || !(tx.inMessage.info.src as Address).equals(Address.parse(transactionSenderAddress))
         || !(tx.inMessage.info.dest as Address).equals(networkConfig.ton.highloadWalletAddress)) {

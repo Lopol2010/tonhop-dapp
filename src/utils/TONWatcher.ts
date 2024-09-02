@@ -16,7 +16,6 @@ interface TONWatcherOptions {
     pollInterval?: number;
     startTimestamp?: number;
     onNewStartTransaction: (lt: string, hash: string) => Promise<void>;
-    predicate: (transaction: Transaction) => boolean;
     onTransaction: (tx: Transaction) => Promise<void>
 }
 
@@ -30,7 +29,6 @@ export class TONWatcher {
     startTimestamp: number;
     intervalId?: NodeJS.Timeout;
     onNewStartTransaction: (lt: string, hash: string) => Promise<void>;
-    predicate: (transaction: Transaction) => boolean;
     onTransaction: (tx: Transaction) => Promise<void>;
 
     public constructor(options: TONWatcherOptions) {
@@ -41,7 +39,6 @@ export class TONWatcher {
         this.pollInterval = options.pollInterval || 5 * 1000;
         this.startTimestamp = options.startTimestamp || 0;
         this.onNewStartTransaction = options.onNewStartTransaction;
-        this.predicate = options.predicate;
         this.onTransaction = options.onTransaction;
     }
 
@@ -78,7 +75,7 @@ export class TONWatcher {
 
             try {
                 transactions = await this.client.getTransactions(this.accountAddress, {
-                    limit: COUNT,
+                    limit: 10,
                     ...(offsetTransactionLT != undefined && { lt: offsetTransactionLT }),
                     ...(offsetTransactionHash != undefined && { hash: offsetTransactionHash }),
                     ...(this.startTransactionLT != undefined && { to_lt: this.startTransactionLT.toString() }),
@@ -93,7 +90,7 @@ export class TONWatcher {
                         data: error.response.data
                     };
                 }
-                console.log("[TONWatcher] error:", newError);
+                console.log("[TONWatcher] error:", error);
 
                 // if an API error occurs, try again
                 retryCount++;
@@ -105,7 +102,7 @@ export class TONWatcher {
                 }
             }
 
-            // console.log(`[TONWatcher] Got ${transactions.length} transactions`);
+            console.log(`[TONWatcher] Got ${transactions.length} transactions`);
 
             if (!transactions.length) {
                 return newStartTransaction;
@@ -162,6 +159,7 @@ export class TONWatcher {
     public stop() {
         if(this.intervalId) clearInterval(this.intervalId);
         this.intervalId = undefined;
+        console.log("[TONWatcher] Stop watching");
     }
 
 }

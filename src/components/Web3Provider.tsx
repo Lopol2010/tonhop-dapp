@@ -1,4 +1,4 @@
-import { WagmiProvider, createConfig, http } from "wagmi";
+import { WagmiProvider, createConfig, createStorage, http } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { networkConfig } from "../networkConfig";
@@ -12,6 +12,7 @@ const defaultConfig = getDefaultConfig({
       // `${import.meta.env.VITE_BSC_RPC_URL}`,
     ),
   },
+  storage: createStorage({ key: networkConfig.wagmiStorageKey }),
 
   // Required API Keys
   walletConnectProjectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID ?? "",

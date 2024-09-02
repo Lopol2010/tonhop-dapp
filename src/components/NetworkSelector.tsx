@@ -82,7 +82,8 @@ const NetworkSelector: React.FC<NetworkSelectorProps> = ({ onSelect, state }) =>
         <button className="flex-1 justify-center items-center
                             flex
                              rounded-none border border-gray-300 hover:border-gray-300 
-                             sm:border-y sm:border-x-0 border-x-0 border-y-0 text-xl bg-transparent"
+                             sm:border-y sm:border-x-0 border-x-0 border-y-0 text-xl bg-transparent
+                             dark:border-y-gray-600"
           onClick={() => handleSwap()}>
           <span className='hidden sm:block'>⇆</span>
           <span className='sm:hidden'>⇅</span>

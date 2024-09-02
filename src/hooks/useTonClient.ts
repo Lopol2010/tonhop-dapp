@@ -7,9 +7,12 @@ export function useTonClient() {
     const [state, setState] = useState<TonClient>();
     useEffect(() => {
         (async () => {
+            // const endpoint = await getHttpEndpoint({ network: networkConfig.ton.network });
+            const endpoint = networkConfig.ton.rpcNodeURL;
             setState(
                 new TonClient({ 
-                    endpoint: await getHttpEndpoint({ network: networkConfig.ton.network ? 'testnet' : 'mainnet' }) 
+                    endpoint: endpoint,
+                    apiKey: networkConfig.ton.nodeRpcApiKey
                 })
             )
         })()

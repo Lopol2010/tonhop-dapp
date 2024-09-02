@@ -26,15 +26,14 @@ export default function useFindTonTransaction(
       accountAddress: Address.parse(addressToSearchAt),
       startTransactionLT: undefined,
       startTransactionHash: undefined,
-      // TODO: startTimestamp leads to problems when for example watcher started too late, need to find a better starting point
-      // maybe should save in localstorage processed txs and use them as stop sign for watcher
       startTimestamp: startTimestamp,
       onNewStartTransaction: async (lt, hash) => { },
-      predicate,
       onTransaction: async tx => {
         if (predicate(tx)) {
-          console.log((tx.inMessage?.info as CommonMessageInfoInternal).value.coins, tx.totalFees, tx.description);
+          // console.log((tx.inMessage?.info as CommonMessageInfoInternal).value.coins, tx.totalFees, tx.description);
           setTransaction(tx);
+          
+          _tonWatcher.stop();
         }
       }
     });
